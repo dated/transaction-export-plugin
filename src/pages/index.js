@@ -188,7 +188,7 @@ module.exports = {
     isLoading: false,
     isInitialised: false,
     currentPage: 1,
-    perPage: 10,
+    perPage: 25,
     prices: [],
     transactions: [],
     records: [],
@@ -303,8 +303,6 @@ module.exports = {
 
       if (action === 'currentPageChange') {
         this.currentPage = value
-      } else if (action === 'currentPerPageChange') {
-        this.currentPerPage = value
       }
 
       this.state.recordTable = {}

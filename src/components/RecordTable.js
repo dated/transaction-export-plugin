@@ -7,7 +7,7 @@ module.exports = {
       :has-pagination="true"
       :current-page="currentPage"
       :per-page="perPage"
-      @on-per-page-change="emitPerPageChange"
+      :per-page-dropdown="[25]"
       @on-page-change="emitCurrentPageChange"
     >
       <template
@@ -162,10 +162,6 @@ module.exports = {
 
     emitCurrentPageChange ({ currentPage }) {
       this.mutateState('currentPageChange', currentPage)
-    },
-
-    emitPerPageChange ({ currentPerPage }) {
-      this.mutateState('perPageChange', currentPerPage)
     }
   }
 }

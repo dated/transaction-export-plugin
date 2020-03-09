@@ -72,8 +72,8 @@ module.exports = {
   }),
 
   props: {
-    state: {
-      type: Object,
+    eventQueue: {
+      type: Array,
       required: true
     }
   },
@@ -84,7 +84,16 @@ module.exports = {
 
   computed: {
     exportOptions () {
-      return walletApi.storage.get('exportOptions', true)
+      return walletApi.storage.get('exportOptions', true) || {
+        delimiter: ',',
+        includeHeaders: true,
+        columns: {
+          date: true,
+          crypto: true,
+          fiat: true,
+          id: true
+        }
+      }
     },
 
     hasColumns () {
@@ -111,19 +120,20 @@ module.exports = {
       }
     },
 
-    mutateState (action, options) {
-      this.state.exportRecordsModal = {
-        action,
+    pushEvent (event, options) {
+      this.eventQueue.push({
+        component: 'ExportRecordsModal',
+        event,
         options
-      }
+      })
     },
 
     emitCancel () {
-      this.mutateState('cancel')
+      this.pushEvent('cancel')
     },
 
     emitConfirm () {
-      this.mutateState('confirm', this.options)
+      this.pushEvent('confirm', { exportOptions: this.options })
     },
 
     onDropdownSelect (delimiter) {

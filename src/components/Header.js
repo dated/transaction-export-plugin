@@ -93,8 +93,8 @@ module.exports = {
       type: Object,
       required: true
     },
-    state: {
-      type: Object,
+    eventQueue: {
+      type: Array,
       required: true
     }
   },
@@ -110,23 +110,24 @@ module.exports = {
   },
 
   methods: {
-    mutateState (action, value) {
-      this.state.header = {
-        action,
-        value
-      }
+    pushEvent (event, options) {
+      this.eventQueue.push({
+        component: 'Header',
+        event,
+        options
+      })
     },
 
     emitAddressChange (address) {
-      this.mutateState('addressChange', address)
+      this.pushEvent('addressChange', { address })
     },
 
     emitOpenExportModal () {
-      this.mutateState('openExportModal')
+      this.pushEvent('openExportModal')
     },
 
     emitReload () {
-      this.mutateState('reload')
+      this.pushEvent('reload')
     }
   }
 }

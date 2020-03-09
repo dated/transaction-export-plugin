@@ -30,21 +30,22 @@ module.exports = {
       type: Boolean,
       required: true
     },
-    state: {
-      type: Object,
+    eventQueue: {
+      type: Array,
       required: true
     }
   },
 
   methods: {
-    mutateState (action) {
-      this.state.buttonLoader = {
-        action
-      }
+    pushEvent (event) {
+      this.eventQueue.push({
+        component: 'ButtonLoader',
+        event
+      })
     },
 
     emitClick () {
-      this.mutateState('click')
+      this.pushEvent('click')
     }
   }
 }

@@ -24,8 +24,8 @@ module.exports = {
   `,
 
   props: {
-    state: {
-      type: Object,
+    eventQueue: {
+      type: Array,
       required: true
     }
   },
@@ -35,21 +35,20 @@ module.exports = {
   }),
 
   methods: {
-    mutateState (action, rememberChoice) {
-      this.state.estimateWarningModal = {
-        action,
-        options: {
-          rememberChoice
-        }
-      }
+    pushEvent (event, options) {
+      this.eventQueue.push({
+        component: 'EstimateWarningModal',
+        event,
+        options
+      })
     },
 
     emitCancel () {
-      this.mutateState('cancel')
+      this.pushEvent('cancel')
     },
 
     emitConfirm () {
-      this.mutateState('confirm', this.rememberChoice)
+      this.pushEvent('confirm', { rememberChoice: this.rememberChoice })
     },
 
     toggleRememberChoice () {

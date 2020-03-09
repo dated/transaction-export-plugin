@@ -110,8 +110,8 @@ module.exports = {
       type: Number,
       required: true
     },
-    state: {
-      type: Object,
+    eventQueue: {
+      type: Array,
       required: true
     }
   },
@@ -153,15 +153,16 @@ module.exports = {
   },
 
   methods: {
-    mutateState (action, value) {
-      this.state.recordTable = {
-        action,
-        value
-      }
+    pushEvent (event, options) {
+      this.eventQueue.push({
+        component: 'RecordTable',
+        event,
+        options
+      })
     },
 
     emitCurrentPageChange ({ currentPage }) {
-      this.mutateState('currentPageChange', currentPage)
+      this.pushEvent('currentPageChange', { currentPage })
     }
   }
 }

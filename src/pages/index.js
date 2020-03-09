@@ -78,10 +78,10 @@ module.exports = {
           />
 
           <ButtonLoader
+            label="Load transactions"
             :disabled="isLoading || !address"
             :is-loading="isLoading"
-            :state="state"
-            label="Load transactions"
+            :event-queue="eventQueue"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@ module.exports = {
           :is-loading="isLoading"
           :has-records="records.length"
           :period="period"
-          :state="state"
+          :event-queue="eventQueue"
         />
 
         <div class="flex flex-col flex-1 p-10 rounded-lg bg-theme-feature overflow-y-auto">
@@ -129,7 +129,7 @@ module.exports = {
                 :rows="records"
                 :current-page="currentPage"
                 :per-page="perPage"
-                :state="state"
+                :event-queue="eventQueue"
               />
             </div>
           </div>
@@ -144,10 +144,6 @@ module.exports = {
 
           <div class="mb-2">
             {{ options }}
-          </div>
-
-          <div class="mb-2">
-            {{ JSON.stringify(state) }}
           </div>
         </div>
       </div>
@@ -166,17 +162,17 @@ module.exports = {
 
       <CurrencyChangeModal
         v-if="showCurrencyChangeModal"
-        :state="state"
+        :event-queue="eventQueue"
       />
 
       <EstimateWarningModal
         v-if="showEstimateWarningModal"
-        :state="state"
+        :event-queue="eventQueue"
       />
 
       <ExportRecordsModal
         v-if="showExportRecordsModal"
-        :state="state"
+        :event-queue="eventQueue"
       />
     </div>
   `,
@@ -204,31 +200,10 @@ module.exports = {
     showCurrencyChangeModal: false,
     showEstimateWarningModal: false,
     showExportRecordsModal: false,
-    state: {
-      header: {},
-      currencyChangeModal: {},
-      estimateWarningModal: {},
-      exportRecordsModal: {},
-      buttonLoader: {},
-      recordTable: {}
-    }
+    eventQueue: []
   }),
 
   mounted () {
-    if (!this.options.exportOptions) {
-      const defaultExportOptions = {
-        delimiter: ',',
-        includeHeaders: true,
-        columns: {
-          date: true,
-          crypto: true,
-          fiat: true,
-          id: true
-        }
-      }
-      this.setOption('exportOptions', defaultExportOptions)
-    }
-
     if (this.hasWallets && this.hasMarketData) {
       this.address = this.addresses[0]
 
@@ -242,6 +217,14 @@ module.exports = {
   },
 
   watch: {
+    async eventQueue () {
+      if (!this.eventQueue.length) {
+        return
+      }
+
+      await this.handleEvent(this.eventQueue.shift())
+    },
+
     async address (address) {
       this.marketService.updateConfig({ address })
 
@@ -257,100 +240,6 @@ module.exports = {
           this.isLoading = false
         }
       }
-    },
-
-    async 'state.header' ({ action, value }) {
-      if (!action) {
-        return
-      }
-
-      if (action === 'openExportModal') {
-        this.openExportModal()
-      } else if (action === 'addressChange') {
-        this.setAddress(value)
-      } else if (action === 'reload') {
-        await this.prepareData()
-      }
-
-      this.state.header = {}
-    },
-
-    'state.estimateWarningModal' ({ action, options }) {
-      if (!action) {
-        return
-      }
-
-      this.closeEstimateWarningModal()
-
-      if (action === 'confirm') {
-        this.onConfirmEstimateWarningModal(options)
-      }
-
-      this.state.estimateWarningModal = {}
-    },
-
-    async 'state.currencyChangeModal' ({ action, options }) {
-      if (!action) {
-        return
-      }
-
-      this.closeCurrencyChangeModal()
-
-      if (action === 'cancel') {
-        this.onCancelCurrencyChangeModal(options)
-      } else if (action === 'confirm') {
-        await this.onConfirmCurrencyChangeModal(options)
-      }
-
-      this.state.currencyChangeModal = {}
-    },
-
-    async 'state.exportRecordsModal' ({ action, options }) {
-      if (!action) {
-        return
-      }
-
-      this.closeExportRecordsModal()
-      
-      if (action === 'confirm') {
-        this.setOption('exportOptions', options)
-
-        try {
-          const filePath = await this.export()
-
-          if (filePath) {
-            walletApi.alert.success(`Your transactions were successfully exported to: ${filePath}`)
-          }
-        } catch (error) {
-          walletApi.alert.error(error)
-        }
-      }
-
-      this.state.exportRecordsModal = {}
-    },
-
-    async 'state.buttonLoader' ({ action }) {
-      if (!action) {
-        return
-      }
-
-      if (action === 'click') {
-        await this.prepareData()
-      }
-
-      this.state.buttonLoader = {}
-    },
-
-    'state.recordTable' ({ action, value }) {
-      if (!action) {
-        return
-      }
-
-      if (action === 'currentPageChange') {
-        this.currentPage = value
-      }
-
-      this.state.recordTable = {}
     },
 
     async 'profile.currency' (currency) {
@@ -441,6 +330,80 @@ module.exports = {
   },
 
   methods: {
+    async handleEvent ({ component, event, options }) {
+      try {
+        await this[`__handle${component}Event`]({ event, options })
+      } catch (error) {
+        console.log(`Missing event handler for component: ${component}`)
+      }
+    },
+
+    async __handleCurrencyChangeModalEvent ({ event, options }) {
+      this.closeCurrencyChangeModal()
+
+      if (event === 'cancel') {
+        this.onCancelCurrencyChangeModal(options)
+      } else if (event === 'confirm') {
+        await this.onConfirmCurrencyChangeModal(options)
+      }
+    },
+
+    async __handleHeaderEvent ({ event, options }) {
+      switch (event) {
+        case 'openExportModal': {
+          this.openExportModal()
+          break
+        }
+        case 'addressChange': {
+          this.setAddress(options.address)
+          break
+        }
+        case 'reload': {
+          await this.prepareData()
+          break
+        }
+        default: break
+      }
+    },
+
+    __handleEstimateWarningModalEvent ({ event, options }) {
+      this.closeEstimateWarningModal()
+
+      if (event === 'confirm') {
+        this.onConfirmEstimateWarningModal(options.rememberChoice)
+      }
+    },
+
+    async __handleButtonLoaderEvent ({ event }) {
+      if (event === 'click') {
+        await this.prepareData()
+      }
+    },
+
+    __handleRecordTableEvent ({ event, options }) {
+      if (event === 'currentPageChange') {
+        this.currentPage = options.currentPage
+      }
+    },
+
+    async __handleExportRecordsModalEvent ({ event, options }) {
+      this.closeExportRecordsModal()
+      
+      if (event === 'confirm') {
+        this.setOption('exportOptions', options.exportOptions)
+
+        try {
+          const filePath = await this.export()
+
+          if (filePath) {
+            walletApi.alert.success(`Your transactions were successfully exported to: ${filePath}`)
+          }
+        } catch (error) {
+          walletApi.alert.error(error)
+        }
+      }
+    },
+
     setOption (key, value) {
       walletApi.storage.set(key, value, true)
     },
@@ -475,7 +438,7 @@ module.exports = {
       this.showEstimateWarningModal = false
     },
 
-    onConfirmEstimateWarningModal ({ rememberChoice }) {
+    onConfirmEstimateWarningModal (rememberChoice) {
       if (rememberChoice) {
         this.setOption('noEstimateWarning', true)
       }

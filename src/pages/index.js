@@ -424,7 +424,7 @@ module.exports = {
       this.showEstimateWarningModal = false
     },
 
-    async onConfirmEstimateWarningModal ({ rememberChoice }) {
+    onConfirmEstimateWarningModal ({ rememberChoice }) {
       if (rememberChoice) {
         walletApi.storage.set('noEstimateWarning', true, true)
       }

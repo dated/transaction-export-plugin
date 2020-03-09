@@ -1,12 +1,14 @@
 const MarketService = require('../services/market.service.js')
 const ImageService = require('../services/image.service.js')
 
-const ButtonLoader = require('../components/ButtonLoader')
-const CurrencyChangeModal = require('../components/modals/CurrencyChangeModal')
-const EstimateWarningModal = require('../components/modals/EstimateWarningModal')
 const Header = require('../components/Header')
+const ButtonLoader = require('../components/ButtonLoader')
 const RecordStats = require('../components/RecordStats')
 const RecordTable = require('../components/RecordTable')
+
+const CurrencyChangeModal = require('../components/modals/CurrencyChangeModal')
+const EstimateWarningModal = require('../components/modals/EstimateWarningModal')
+const ExportRecordsModal = require('../components/modals/ExportRecordsModal')
 
 const utils = require('../utils')
 
@@ -171,6 +173,11 @@ module.exports = {
         v-if="showEstimateWarningModal"
         :state="state"
       />
+
+      <ExportRecordsModal
+        v-if="showExportRecordsModal"
+        :state="state"
+      />
     </div>
   `,
 
@@ -178,6 +185,7 @@ module.exports = {
     ButtonLoader,
     CurrencyChangeModal,
     EstimateWarningModal,
+    ExportRecordsModal,
     Header,
     RecordStats,
     RecordTable
@@ -200,13 +208,26 @@ module.exports = {
       header: {},
       currencyChangeModal: {},
       estimateWarningModal: {},
+      exportRecordsModal: {},
       buttonLoader: {},
       recordTable: {}
     }
   }),
 
   mounted () {
-    // walletApi.storage.delete(true)
+    if (!this.options.exportOptions) {
+      const defaultExportOptions = {
+        delimiter: ',',
+        includeHeaders: true,
+        columns: {
+          date: true,
+          crypto: true,
+          fiat: true,
+          id: true
+        }
+      }
+      this.setOption('exportOptions', defaultExportOptions)
+    }
 
     if (this.hasWallets && this.hasMarketData) {
       this.address = this.addresses[0]
@@ -282,6 +303,30 @@ module.exports = {
       }
 
       this.state.currencyChangeModal = {}
+    },
+
+    async 'state.exportRecordsModal' ({ action, options }) {
+      if (!action) {
+        return
+      }
+
+      this.closeExportRecordsModal()
+      
+      if (action === 'confirm') {
+        this.setOption('exportOptions', options)
+
+        try {
+          const filePath = await this.export()
+
+          if (filePath) {
+            walletApi.alert.success(`Your transactions were successfully exported to: ${filePath}`)
+          }
+        } catch (error) {
+          walletApi.alert.error(error)
+        }
+      }
+
+      this.state.exportRecordsModal = {}
     },
 
     async 'state.buttonLoader' ({ action }) {
@@ -396,6 +441,14 @@ module.exports = {
   },
 
   methods: {
+    setOption (key, value) {
+      walletApi.storage.set(key, value, true)
+    },
+
+    getOption (key) {
+      return walletApi.storage.get(key, true)
+    },
+
     setAddress (address) {
       this.address = address
     },
@@ -413,7 +466,7 @@ module.exports = {
     },
 
     onAcceptDisclaimer () {
-      walletApi.storage.set('hasAcceptedDisclaimer', true, true)
+      this.setOption('hasAcceptedDisclaimer', true)
     },
 
     // EstimateWarningModal
@@ -424,7 +477,7 @@ module.exports = {
 
     onConfirmEstimateWarningModal ({ rememberChoice }) {
       if (rememberChoice) {
-        walletApi.storage.set('noEstimateWarning', true, true)
+        this.setOption('noEstimateWarning', true)
       }
     },
 
@@ -436,13 +489,13 @@ module.exports = {
 
     onCancelCurrencyChangeModal ({ rememberChoice }) {
       if (rememberChoice) {
-        walletApi.storage.set('reloadOnCurrencyChange', false, true)
+        this.setOption('reloadOnCurrencyChange', false)
       }
     },
 
     async onConfirmCurrencyChangeModal ({ rememberChoice }) {
       if (rememberChoice) {
-        walletApi.storage.set('reloadOnCurrencyChange', true, true)
+        this.setOption('reloadOnCurrencyChange', true)
       }
 
       this.isLoading = true
@@ -450,21 +503,60 @@ module.exports = {
       this.isLoading = false
     },
 
-    async openExportModal () {
+    // ExportRecordsModal
+
+    openExportModal () {
       this.showExportRecordsModal = true
-      await this.export()
+    },
+
+    closeExportRecordsModal () {
+      this.showExportRecordsModal = false
     },
 
     async export () {
-      try {
-        const filePath = await walletApi.dialogs.save('abc def', `export_${this.address}.csv`, 'csv')
+      const options = this.getOption('exportOptions')
 
-        if (filePath) {
-          walletApi.alert.success(`Your wallets were successfully exported to: ${filePath}`)
+      const activeColumns = Object.entries(options.columns).reduce((columns, column) => {
+        if (column[1]) {
+          columns.push(column[0])
         }
-      } catch (error) {
-        walletApi.alert.error(error)
+        return columns
+      }, [])
+
+      let rows = []
+
+      if (options.includeHeaders) {
+        const labels = {
+          date: 'Date',
+          crypto: `Crypto Amount (${this.profile.network.token})`,
+          fiat: `Fiat Amount (${this.profile.currency})`,
+          id: 'Transaction ID'
+        }
+
+        const headers = []
+
+        for (const column of activeColumns) {
+          headers.push(labels[column])
+        }
+
+        rows.push(headers.join(options.delimiter))
       }
+
+      for (const record of this.records) {
+        const values = []
+
+        for (const column of Object.keys(options.columns)) {
+          if (activeColumns.includes(column)) {
+            values.push(record[column])
+          }
+        }
+
+        rows.push(values.join(options.delimiter))
+      }
+
+      rows = rows.join('\n')
+
+      return walletApi.dialogs.save(rows, `export_${this.address}.csv`, 'csv')
     },
 
     async prepareData () {

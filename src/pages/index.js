@@ -491,8 +491,6 @@ module.exports = {
     async fetchTransactions () {
       const { isEstimate, transactions } = await this.marketService.fetchTransactions()
 
-      console.log(isEstimate)
-
       if (isEstimate && !this.options.noEstimateWarning) {
         this.showEstimateWarningModal = true
       }

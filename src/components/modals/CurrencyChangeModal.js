@@ -45,7 +45,7 @@ module.exports = {
       }
     },
 
-    emitConfirm () {
+    emitCancel () {
       this.mutateState('cancel')
     },
 

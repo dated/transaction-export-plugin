@@ -1,0 +1,49 @@
+{
+  "name": "@dated/transaction-export-plugin",
+  "version": "0.0.1",
+  "description": "Export your transactions for all your tax needs",
+  "logo": "https://raw.githubusercontent.com/ark-ecosystem-desktop-plugins/template/master/logo.png",
+  "main": "src/index.js",
+  "author": "Edgar Goetzendorff <hello@dated.fun>",
+  "license": "MIT",
+  "desktop-wallet": {
+    "title": "Transaction Export",
+    "categories": [
+      "utility"
+    ],
+    "permissions": [
+      "COMPONENTS",
+      "ROUTES",
+      "MENU_ITEMS",
+      "UI_COMPONENTS",
+      "PROFILE_CURRENT",
+      "PEER_CURRENT",
+      "HTTP",
+      "UTILS",
+      "STORAGE",
+      "ALERTS",
+      "DIALOGS"
+    ],
+    "urls": [
+      "https://min-api.cryptocompare.com/data/histoday",
+      "https://explorer.ark.io/api/transactions"
+    ],
+    "minVersion": "2.6"
+  },
+  "keywords": [
+    "utility",
+    "export",
+    "taxes",
+    "@arkecosystem",
+    "desktop-wallet",
+    "plugin"
+  ],
+  "bugs": {
+    "url": "https://github.com/dated/transaction-export-plugin/issues"
+  },
+  "homepage": "https://github.com/dated/transaction-export-plugin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dated/transaction-export-plugin.git"
+  }
+}

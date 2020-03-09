@@ -1,0 +1,18 @@
+# Transaction Export Plugin
+
+Export your transactions for all your tax needs.
+
+> The information presented by this plugin has been prepared for informational purposes only, and is not intended to provide, and should not be relied on for, tax, legal or accounting advice.
+
+## Installation
+
+Install this plugin directly through through the Plugins Manager of the Desktop Wallet. Alternatively clone or [download it](https://github.com/dated/transaction-export-plugin/archive/master.zip) this repository and unzip it into `~/.ark-desktop/plugins/`
+
+## Credits
+
+- [Edgar Goetzendorff](https://github.com/dated)
+- [All Contributors](../../contributors)
+
+## License
+
+[MIT](LICENSE) © [Edgar Goetzendorff](https://github.com/dated)

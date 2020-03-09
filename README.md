@@ -6,7 +6,7 @@ Export your transactions for all your tax needs.
 
 ## Installation
 
-Install this plugin directly through through the Plugins Manager of the Desktop Wallet. Alternatively clone or [download it](https://github.com/dated/transaction-export-plugin/archive/master.zip) this repository and unzip it into `~/.ark-desktop/plugins/`
+Install this plugin directly through the Plugins Manager of the Desktop Wallet. Alternatively you can clone or [download it](https://github.com/dated/transaction-export-plugin/archive/master.zip) this repository and unzip it into `~/.ark-desktop/plugins/`.
 
 ## Credits
 

@@ -4,7 +4,7 @@ module.exports = {
   template: `
     <div class="flex">
       <div class="flex flex-1 p-6 border border-theme-line-separator hover:border-theme-feature hover:shadow-lg rounded-lg transition">
-        <span class="text-grey border-2 border-grey-lighter rounded-full h-10 w-10 mr-3 flex items-center justify-center">
+        <span class="text-theme-button-text border-2 border-theme-button rounded-full h-10 w-10 mr-3 flex items-center justify-center">
           <SvgIcon
             name="arrow-sent-received"
             class="text-center"

@@ -30,22 +30,22 @@ module.exports = {
       type: Boolean,
       required: true
     },
-    eventWrapper: {
-      type: Object,
+    callback: {
+      type: Function,
       required: true
     }
   },
 
   methods: {
-    pushEvent (event) {
-      this.eventWrapper.event = {
+    executeCallback (event) {
+      this.callback({
         component: 'ButtonLoader',
         event
-      }
+      })
     },
 
     emitClick () {
-      this.pushEvent('click')
+      this.executeCallback('click')
     }
   }
 }

@@ -72,8 +72,8 @@ module.exports = {
   }),
 
   props: {
-    eventWrapper: {
-      type: Object,
+    callback: {
+      type: Function,
       required: true
     }
   },
@@ -120,20 +120,20 @@ module.exports = {
       }
     },
 
-    pushEvent (event, options) {
-      this.eventWrapper.event = {
+    executeCallback (event, options) {
+      this.callback({
         component: 'ExportRecordsModal',
         event,
         options
-      }
+      })
     },
 
     emitCancel () {
-      this.pushEvent('cancel')
+      this.executeCallback('cancel')
     },
 
     emitConfirm () {
-      this.pushEvent('confirm', { exportOptions: this.options })
+      this.executeCallback('confirm', { exportOptions: this.options })
     },
 
     onDropdownSelect (delimiter) {

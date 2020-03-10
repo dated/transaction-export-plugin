@@ -93,8 +93,8 @@ module.exports = {
       type: Object,
       required: true
     },
-    eventWrapper: {
-      type: Object,
+    callback: {
+      type: Function,
       required: true
     }
   },
@@ -110,24 +110,24 @@ module.exports = {
   },
 
   methods: {
-    pushEvent (event, options) {
-      this.eventWrapper.event = {
+    executeCallback (event, options) {
+      this.callback({
         component: 'Header',
         event,
         options
-      }
+      })
     },
 
     emitAddressChange (address) {
-      this.pushEvent('addressChange', { address })
+      this.executeCallback('addressChange', { address })
     },
 
     emitOpenExportModal () {
-      this.pushEvent('openExportModal')
+      this.executeCallback('openExportModal')
     },
 
     emitReload () {
-      this.pushEvent('reload')
+      this.executeCallback('reload')
     }
   }
 }

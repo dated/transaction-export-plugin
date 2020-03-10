@@ -81,7 +81,7 @@ module.exports = {
             label="Load transactions"
             :disabled="isLoading || !address"
             :is-loading="isLoading"
-            :event-wrapper="eventWrapper"
+            :callback="handleEvent"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@ module.exports = {
           :is-loading="isLoading"
           :has-records="records.length"
           :period="period"
-          :event-wrapper="eventWrapper"
+          :callback="handleEvent"
         />
 
         <div class="flex flex-col flex-1 p-10 rounded-lg bg-theme-feature overflow-y-auto">
@@ -129,7 +129,7 @@ module.exports = {
                 :rows="records"
                 :current-page="currentPage"
                 :per-page="perPage"
-                :event-wrapper="eventWrapper"
+                :callback="handleEvent"
               />
             </div>
           </div>
@@ -162,17 +162,17 @@ module.exports = {
 
       <CurrencyChangeModal
         v-if="showCurrencyChangeModal"
-        :event-wrapper="eventWrapper"
+        :callback="handleEvent"
       />
 
       <EstimateWarningModal
         v-if="showEstimateWarningModal"
-        :event-wrapper="eventWrapper"
+        :callback="handleEvent"
       />
 
       <ExportRecordsModal
         v-if="showExportRecordsModal"
-        :event-wrapper="eventWrapper"
+        :callback="handleEvent"
       />
     </div>
   `,
@@ -199,10 +199,7 @@ module.exports = {
     marketService: null,
     showCurrencyChangeModal: false,
     showEstimateWarningModal: false,
-    showExportRecordsModal: false,
-    eventWrapper: {
-      event: null
-    }
+    showExportRecordsModal: false
   }),
 
   mounted () {
@@ -219,16 +216,6 @@ module.exports = {
   },
 
   watch: {
-    async 'eventWrapper.event' () {
-      if (!this.eventWrapper.event) {
-        return
-      }
-
-      await this.handleEvent(this.eventWrapper.event)
-
-      this.eventWrapper.event = null
-    },
-
     async address (address) {
       this.marketService.updateConfig({ address })
 
@@ -336,13 +323,13 @@ module.exports = {
   methods: {
     async handleEvent ({ component, event, options }) {
       try {
-        await this[`__handle${component}Event`]({ event, options })
+        await this[`__handle${component}Event`](event, options)
       } catch (error) {
         console.log(`Missing event handler for component: ${component}`)
       }
     },
 
-    async __handleCurrencyChangeModalEvent ({ event, options }) {
+    async __handleCurrencyChangeModalEvent (event, options) {
       this.closeCurrencyChangeModal()
 
       if (event === 'cancel') {
@@ -352,7 +339,7 @@ module.exports = {
       }
     },
 
-    async __handleHeaderEvent ({ event, options }) {
+    async __handleHeaderEvent (event, options) {
       switch (event) {
         case 'openExportModal': {
           this.openExportModal()
@@ -370,7 +357,7 @@ module.exports = {
       }
     },
 
-    __handleEstimateWarningModalEvent ({ event, options }) {
+    __handleEstimateWarningModalEvent (event, options) {
       this.closeEstimateWarningModal()
 
       if (event === 'confirm') {
@@ -378,19 +365,19 @@ module.exports = {
       }
     },
 
-    async __handleButtonLoaderEvent ({ event }) {
+    async __handleButtonLoaderEvent (event) {
       if (event === 'click') {
         await this.prepareData()
       }
     },
 
-    __handleRecordTableEvent ({ event, options }) {
+    __handleRecordTableEvent (event, options) {
       if (event === 'currentPageChange') {
         this.currentPage = options.currentPage
       }
     },
 
-    async __handleExportRecordsModalEvent ({ event, options }) {
+    async __handleExportRecordsModalEvent (event, options) {
       this.closeExportRecordsModal()
       
       if (event === 'confirm') {

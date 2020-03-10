@@ -24,8 +24,8 @@ module.exports = {
   `,
 
   props: {
-    eventWrapper: {
-      type: Object,
+    callback: {
+      type: Function,
       required: true
     }
   },
@@ -35,20 +35,20 @@ module.exports = {
   }),
 
   methods: {
-    pushEvent (event, options) {
-      this.eventWrapper.event = {
+    executeCallback (event, options) {
+      this.callback({
         component: 'EstimateWarningModal',
         event,
         options
-      }
+      })
     },
 
     emitCancel () {
-      this.pushEvent('cancel')
+      this.executeCallback('cancel')
     },
 
     emitConfirm () {
-      this.pushEvent('confirm', { rememberChoice: this.rememberChoice })
+      this.executeCallback('confirm', { rememberChoice: this.rememberChoice })
     },
 
     toggleRememberChoice () {

@@ -110,8 +110,8 @@ module.exports = {
       type: Number,
       required: true
     },
-    eventWrapper: {
-      type: Object,
+    callback: {
+      type: Function,
       required: true
     }
   },
@@ -153,16 +153,16 @@ module.exports = {
   },
 
   methods: {
-    pushEvent (event, options) {
-      this.eventWrapper.event = {
+    executeCallback (event, options) {
+      this.callback({
         component: 'RecordTable',
         event,
         options
-      }
+      })
     },
 
     emitCurrentPageChange ({ currentPage }) {
-      this.pushEvent('currentPageChange', { currentPage })
+      this.executeCallback('currentPageChange', { currentPage })
     }
   }
 }

@@ -44,8 +44,8 @@ module.exports = {
         >
           <span class="ContactAll__CreateButton__icon">
             <SvgIcon
-              name="plus"
-              view-box="0 0 9 9"
+              name="reload"
+              view-box="0 0 15 14"
               class="text-center"
             />
           </span>
@@ -62,8 +62,8 @@ module.exports = {
         >
           <span class="ContactAll__CreateButton__icon">
             <SvgIcon
-              name="plus"
-              view-box="0 0 9 9"
+              name="arrow-export"
+              view-box="0 0 7 10"
               class="text-center"
             />
           </span>

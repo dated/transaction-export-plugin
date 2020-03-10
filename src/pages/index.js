@@ -81,7 +81,7 @@ module.exports = {
             label="Load transactions"
             :disabled="isLoading || !address"
             :is-loading="isLoading"
-            :event-queue="eventQueue"
+            :event-wrapper="eventWrapper"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@ module.exports = {
           :is-loading="isLoading"
           :has-records="records.length"
           :period="period"
-          :event-queue="eventQueue"
+          :event-wrapper="eventWrapper"
         />
 
         <div class="flex flex-col flex-1 p-10 rounded-lg bg-theme-feature overflow-y-auto">
@@ -129,7 +129,7 @@ module.exports = {
                 :rows="records"
                 :current-page="currentPage"
                 :per-page="perPage"
-                :event-queue="eventQueue"
+                :event-wrapper="eventWrapper"
               />
             </div>
           </div>
@@ -162,17 +162,17 @@ module.exports = {
 
       <CurrencyChangeModal
         v-if="showCurrencyChangeModal"
-        :event-queue="eventQueue"
+        :event-wrapper="eventWrapper"
       />
 
       <EstimateWarningModal
         v-if="showEstimateWarningModal"
-        :event-queue="eventQueue"
+        :event-wrapper="eventWrapper"
       />
 
       <ExportRecordsModal
         v-if="showExportRecordsModal"
-        :event-queue="eventQueue"
+        :event-wrapper="eventWrapper"
       />
     </div>
   `,
@@ -200,7 +200,9 @@ module.exports = {
     showCurrencyChangeModal: false,
     showEstimateWarningModal: false,
     showExportRecordsModal: false,
-    eventQueue: []
+    eventWrapper: {
+      event: null
+    }
   }),
 
   mounted () {
@@ -217,12 +219,14 @@ module.exports = {
   },
 
   watch: {
-    async eventQueue () {
-      if (!this.eventQueue.length) {
+    async 'eventWrapper.event' () {
+      if (!this.eventWrapper.event) {
         return
       }
 
-      await this.handleEvent(this.eventQueue.shift())
+      await this.handleEvent(this.eventWrapper.event)
+
+      this.eventWrapper.event = null
     },
 
     async address (address) {

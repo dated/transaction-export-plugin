@@ -30,18 +30,18 @@ module.exports = {
       type: Boolean,
       required: true
     },
-    eventQueue: {
-      type: Array,
+    eventWrapper: {
+      type: Object,
       required: true
     }
   },
 
   methods: {
     pushEvent (event) {
-      this.eventQueue.push({
+      this.eventWrapper.event = {
         component: 'ButtonLoader',
         event
-      })
+      }
     },
 
     emitClick () {

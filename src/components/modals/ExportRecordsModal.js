@@ -72,8 +72,8 @@ module.exports = {
   }),
 
   props: {
-    eventQueue: {
-      type: Array,
+    eventWrapper: {
+      type: Object,
       required: true
     }
   },
@@ -121,11 +121,11 @@ module.exports = {
     },
 
     pushEvent (event, options) {
-      this.eventQueue.push({
+      this.eventWrapper.event = {
         component: 'ExportRecordsModal',
         event,
         options
-      })
+      }
     },
 
     emitCancel () {

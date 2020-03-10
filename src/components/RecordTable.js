@@ -110,8 +110,8 @@ module.exports = {
       type: Number,
       required: true
     },
-    eventQueue: {
-      type: Array,
+    eventWrapper: {
+      type: Object,
       required: true
     }
   },
@@ -154,11 +154,11 @@ module.exports = {
 
   methods: {
     pushEvent (event, options) {
-      this.eventQueue.push({
+      this.eventWrapper.event = {
         component: 'RecordTable',
         event,
         options
-      })
+      }
     },
 
     emitCurrentPageChange ({ currentPage }) {

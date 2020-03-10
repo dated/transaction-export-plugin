@@ -93,8 +93,8 @@ module.exports = {
       type: Object,
       required: true
     },
-    eventQueue: {
-      type: Array,
+    eventWrapper: {
+      type: Object,
       required: true
     }
   },
@@ -111,11 +111,11 @@ module.exports = {
 
   methods: {
     pushEvent (event, options) {
-      this.eventQueue.push({
+      this.eventWrapper.event = {
         component: 'Header',
         event,
         options
-      })
+      }
     },
 
     emitAddressChange (address) {

@@ -41,23 +41,39 @@ class MarketService {
 
     let isEstimate
     let transactions = []
+
     while (!reachedLastPage) {
-      const { meta, data } = await walletApi.peers.current.get(`wallets/${this.config.address}/transactions`, {
-        query: {
-          page
-        }
-      })
+      const requests = []
 
-      if (isEstimate === undefined) {
-        isEstimate = meta.totalCountIsEstimate
-      }
+      const limit = page + 10
 
-      if (data.length === 0) {
-        reachedLastPage = true
-      } else {
-        transactions = transactions.concat(data)
+      while (page < limit) {
+        requests.push(
+          walletApi.peers.current.get(`wallets/${this.config.address}/transactions`, {
+            query: {
+              page
+            },
+            retry: 10
+          })
+        )
 
         page++
+      }
+
+      const results = await Promise.all((requests))
+
+      for (const result of results) {
+        const { meta, data } = result
+
+        if (data.length === 0 && !reachedLastPage) {
+          reachedLastPage = true
+        } else {
+          transactions = transactions.concat(data)
+        }
+
+        if (isEstimate === undefined) {
+          isEstimate = meta.totalCountIsEstimate
+        }
       }
     }
 

@@ -7,6 +7,7 @@ const RecordStats = require('../components/RecordStats')
 const RecordTable = require('../components/RecordTable')
 
 const CurrencyChangeModal = require('../components/modals/CurrencyChangeModal')
+const DisclaimerModal = require('../components/modals/DisclaimerModal')
 const EstimateWarningModal = require('../components/modals/EstimateWarningModal')
 const ExportRecordsModal = require('../components/modals/ExportRecordsModal')
 
@@ -148,16 +149,9 @@ module.exports = {
         </div>
       </div>
 
-      <ModalConfirmation
+      <DisclaimerModal
         v-if="!options.hasAcceptedDisclaimer"
-        container-classes="max-w-md"
-        title="Disclaimer"
-        note="The information presented by this plugin has been prepared for informational purposes only, and is not intended to provide, and should not be relied on for, tax, legal or accounting advice."
-        cancel-button="Cancel"
-        continue-button="I understand"
-        @cancel="onCancelDisclaimer"
-        @close="onCancelDisclaimer"
-        @continue="onAcceptDisclaimer"
+        :callback="handleEvent"
       />
 
       <CurrencyChangeModal
@@ -180,6 +174,7 @@ module.exports = {
   components: {
     ButtonLoader,
     CurrencyChangeModal,
+    DisclaimerModal,
     EstimateWarningModal,
     ExportRecordsModal,
     Header,
@@ -329,6 +324,14 @@ module.exports = {
       }
     },
 
+    __handleDisclaimerModalEvent (event) {
+      if (event === 'cancel') {
+        this.onCancelDisclaimer()
+      } else if (event === 'confirm') {
+        this.onConfirmDisclaimer()
+      }
+    },
+
     async __handleCurrencyChangeModalEvent (event, options) {
       this.closeCurrencyChangeModal()
 
@@ -415,11 +418,13 @@ module.exports = {
       this.setAddress(address)
     },
 
+    // DisclaimerModal
+
     onCancelDisclaimer () {
       this.goTo('dashboard')
     },
 
-    onAcceptDisclaimer () {
+    onConfirmDisclaimer () {
       this.setOption('hasAcceptedDisclaimer', true)
     },
 

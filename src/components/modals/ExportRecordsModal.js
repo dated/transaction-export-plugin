@@ -1,7 +1,9 @@
+const utils = require('../../utils')
+
 module.exports = {
   template: `
     <ModalWindow
-      title="Export Transactions"
+      :title="getTitle()"
       container-classes="w-md max-w-md"
       @close="emitCancel"
     >
@@ -72,6 +74,10 @@ module.exports = {
   }),
 
   props: {
+    count: {
+      type: Number,
+      required: true
+    },
     callback: {
       type: Function,
       required: true
@@ -96,12 +102,20 @@ module.exports = {
       }
     },
 
+    profile () {
+      return walletApi.profiles.getCurrent()
+    },
+
     hasColumns () {
       return this.options.columns ? Object.values(this.options.columns).some(column => !!column) : false
     }
   },
 
   methods: {
+    getTitle () {
+      return `Export ${this.formatNumber(this.count)} Transactions`
+    },
+
     getLabel (column) {
       const labels = {
         date: 'Date',
@@ -138,6 +152,10 @@ module.exports = {
 
     onDropdownSelect (delimiter) {
       this.options.delimiter = delimiter
+    },
+
+    formatNumber (value) {
+      return utils.formatter_number(value, this.profile.language)
     }
   }
 }

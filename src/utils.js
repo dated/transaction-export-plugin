@@ -1,9 +1,9 @@
 module.exports = {
-  formatNumber: (value, language = en) => {
+  formatter_number: (value, language = en) => {
     return Number(value).toLocaleString(language)
   },
 
-  formatCurrency: (value, currency, language = 'en') => {
+  formatter_currency: (value, currency, language = 'en') => {
     const isCrypto = currency => {
       return ['BTC', 'ETH', 'LTC'].includes(currency)
     }

@@ -137,10 +137,12 @@ module.exports = {
                 class="mb-8"
                 :totals="totals"
                 :count="records.length"
+                :filter="filter"
+                :callback="handleEvent"
               />
 
               <RecordTable
-                :rows="records"
+                :rows="filteredRecords"
                 :current-page="currentPage"
                 :per-page="perPage"
                 :callback="handleEvent"
@@ -179,6 +181,7 @@ module.exports = {
 
       <ExportRecordsModal
         v-if="showExportRecordsModal"
+        :count="filteredRecords.length"
         :callback="handleEvent"
       />
     </div>
@@ -203,6 +206,8 @@ module.exports = {
     perPage: 25,
     prices: [],
     transactions: [],
+    filter: null,
+    period: {},
     records: [],
     marketService: null,
     showCurrencyChangeModal: false,
@@ -211,19 +216,28 @@ module.exports = {
   }),
 
   mounted () {
-    if (this.hasWallets && this.hasMarketData) {
-      this.address = this.addresses[0]
-
-      this.marketService = new MarketService({
-        address: this.address,
-        token: this.profile.network.token,
-        currency: this.profile.currency,
-        epoch: this.profile.network.constants.epoch
-      })
+    if (!this.hasWallets || !this.hasMarketData) {
+      return
     }
+
+    this.address = this.addresses[0]
+
+    this.marketService = new MarketService({
+      address: this.address,
+      token: this.profile.network.token,
+      currency: this.profile.currency,
+      epoch: this.profile.network.constants.epoch
+    })
   },
 
   watch: {
+    filteredRecords () {
+      this.period = this.filteredRecords.length ? {
+        start: this.filteredRecords[this.filteredRecords.length - 1].date,
+        end: this.filteredRecords[0].date
+      } : {}
+    },
+
     async address (address) {
       this.marketService.updateConfig({ address })
 
@@ -265,6 +279,16 @@ module.exports = {
   },
 
   computed: {
+    filteredRecords () {
+      if (!this.filter) {
+        return this.records
+      }
+
+      return this.records.filter(record => {
+        return record.crypto.startsWith('-') === (this.filter === 'outgoing')
+      })
+    },
+
     logoImage () {
       return ImageService.image('logo')
     },
@@ -292,13 +316,6 @@ module.exports = {
 
     hasMarketData () {
       return this.profile.network.market.enabled
-    },
-
-    period () {
-      return this.records.length ? {
-        start: this.records[this.records.length - 1].date,
-        end: this.records[0].date
-      } : {}
     },
 
     totals () {
@@ -384,6 +401,12 @@ module.exports = {
     async __handleButtonLoaderEvent (event) {
       if (event === 'click') {
         await this.prepareData()
+      }
+    },
+
+    __handleRecordStatsEvent (event, options) {
+      if (event === 'filterChange') {
+        this.filter = options.filter
       }
     },
 
@@ -514,7 +537,7 @@ module.exports = {
         rows.push(headers.join(options.delimiter))
       }
 
-      for (const record of this.records) {
+      for (const record of this.filteredRecords) {
         const values = []
 
         for (const column of Object.keys(options.columns)) {

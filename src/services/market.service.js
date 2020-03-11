@@ -100,21 +100,17 @@ class MarketService {
         }
       } else if (transaction.type === 6) {
         if (transaction.sender === this.config.address) {
-          cryptoAmount = transaction.asset.payments.reduce((acc, payment) => {
-            if (payment.recipientId === this.config.address) {
-              acc = acc.plus(payment.amount)
-            } else {
-              acc = acc.minus(payment.amount)
+          for (const payment of transaction.asset.payments) {
+            if (payment.recipientId !== this.config.address) {
+              cryptoAmount = cryptoAmount.minus(payment.amount)
             }
-            return acc
-          }, cryptoAmount)
+          }
         } else {
-          cryptoAmount = transaction.asset.payments.reduce((acc, payment) => {
+          for (const payment of transaction.asset.payments) {
             if (payment.recipientId === this.config.address) {
-              acc = acc.plus(payment.amount)
+              cryptoAmount = cryptoAmount.plus(payment.amount)
             }
-            return acc
-          }, cryptoAmount)
+          }
         }
       }
 

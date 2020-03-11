@@ -20,7 +20,7 @@ module.exports = {
     >
       <div
         v-if="!isInitialised"
-        class="flex flex-col flex-1 justify-center items-center rounded-lg bg-theme-feature"
+        class="relative flex flex-col flex-1 justify-center items-center rounded-lg bg-theme-feature"
       >
         <img :src="logoImage" class="mb-10 rounded-lg">
 
@@ -85,6 +85,13 @@ module.exports = {
             :callback="handleEvent"
           />
         </div>
+
+        <p
+          v-if="isLoading"
+          class="absolute pin-b text-theme-page-text-light text-sm max-w-sm text-center mb-10"
+        >
+          <span class="font-bold">Please be advised:</span> Gathering the transaction data and combining it with the historic exchange rates might take some time.
+        </p>
       </div>
 
       <div
@@ -103,9 +110,15 @@ module.exports = {
           <div class="flex flex-1">
             <div
               v-if="isLoading"
-              class="m-auto"
+              class="relative flex items-center mx-auto w-md"
             >
-              <Loader />
+              <div class="mx-auto">
+                <Loader />
+              </div>
+
+              <p class="absolute pin-b pin-x mx-auto text-theme-page-text-light text-sm max-w-sm text-center">
+                <span class="font-bold">Please be advised:</span> Gathering the transaction data and combining it with the historic exchange rates might take some time.
+              </p>
             </div>
 
             <div

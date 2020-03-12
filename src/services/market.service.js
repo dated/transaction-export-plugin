@@ -1,16 +1,34 @@
 class MarketService {
   constructor ({ address, token, currency, epoch }) {
-    this.config = {
+    this._config = {
       address,
       token,
       currency,
       epoch
     }
+
+    this._closingPriceMap = null
+  }
+
+  get config () {
+    return this._config
+  }
+
+  set config (config) {
+    this._config = config
+  }
+
+  get closingPrices () {
+    return this._closingPriceMap
+  }
+
+  set closingPrices (prices) {
+    this._closingPriceMap = prices
   }
 
   updateConfig (config) {
     this.config = {
-      ...this.config,
+      ...this._config,
       ...config
     }
   }
@@ -26,13 +44,14 @@ class MarketService {
       json: true
     })
 
-    return Object.values(body.Data).map(price => {
-      return {
-        currency: this.config.currency,
-        date: walletApi.utils.datetime(price.time * 1000).format('YYYY-MM-DD'),
-        price: price.close
-      }
-    })
+    const priceMap = new Map()
+
+    for (const price of Object.values(body.Data)) {
+      const date = walletApi.utils.datetime(price.time * 1000).format('YYYY-MM-DD')
+      priceMap.set(date, price.close)
+    }
+
+    this.closingPrices = priceMap
   }
 
   async fetchTransactions () {
@@ -88,8 +107,10 @@ class MarketService {
     }
   }
 
-  combinePricesWithTransactions (prices, transactions) {
-    return transactions.map(transaction => {
+  combinePricesWithTransactions (transactions) {
+    const data = []
+
+    for (const transaction of transactions) {
       let cryptoAmount = new walletApi.utils.bigNumber(0)
 
       if (transaction.type === 0) {
@@ -116,16 +137,18 @@ class MarketService {
 
       cryptoAmount = cryptoAmount.dividedBy(1e8)
 
-      const transactionTime = walletApi.utils.datetime(transaction.timestamp.unix * 1000).format('YYYY-MM-DD')
-      const historicalPoint = prices.find(price => price.date === transactionTime)
+      const transactionDate = walletApi.utils.datetime(transaction.timestamp.unix * 1000).format('YYYY-MM-DD')
+      const historicalPrice = this.closingPrices.get(transactionDate)
 
-      return {
+      data.push({
         id: transaction.id,
-        date: historicalPoint.date,
+        date: transactionDate,
         crypto: cryptoAmount.toString(),
-        fiat: historicalPoint ? cryptoAmount.times(historicalPoint.price).toString() : 'n/a'
-      }
-    })
+        fiat: historicalPrice ? cryptoAmount.times(historicalPrice).toString() : 'n/a'
+      })
+    }
+
+    return data
   }
 
   getDaysSinceLaunch () {

@@ -30,8 +30,7 @@
       "DIALOGS"
     ],
     "urls": [
-      "https://min-api.cryptocompare.com/data/histoday",
-      "https://explorer.ark.io/api/transactions"
+      "https://min-api.cryptocompare.com/data/histoday"
     ],
     "minVersion": "2.6"
   },

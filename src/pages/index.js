@@ -204,7 +204,6 @@ module.exports = {
     isInitialised: false,
     currentPage: 1,
     perPage: 25,
-    prices: [],
     transactions: [],
     filter: null,
     period: {},
@@ -555,7 +554,7 @@ module.exports = {
       try {
         this.isLoading = true
 
-        await this.fetchPrices()
+        await this.marketService.fetchClosingPrices()
         await this.fetchTransactions()
 
         this.combineData()
@@ -566,10 +565,6 @@ module.exports = {
         this.isLoading = false
         this.isInitialised = true
       }
-    },
-
-    async fetchPrices () {
-      this.prices = await this.marketService.fetchClosingPrices()
     },
 
     async fetchTransactions () {
@@ -584,7 +579,7 @@ module.exports = {
 
     async combineData (refetchPrices = false) {
       if (refetchPrices) {
-        await this.fetchPrices()
+        await this.marketService.fetchClosingPrices()
       }
 
       this.records = this.marketService.combinePricesWithTransactions(this.prices, this.transactions)

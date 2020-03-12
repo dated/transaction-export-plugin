@@ -231,13 +231,6 @@ module.exports = {
   },
 
   watch: {
-    filteredRecords () {
-      this.period = this.filteredRecords.length ? {
-        start: this.filteredRecords[this.filteredRecords.length - 1].date,
-        end: this.filteredRecords[0].date
-      } : {}
-    },
-
     async address (address) {
       this.marketService.updateConfig({ address })
 
@@ -264,8 +257,9 @@ module.exports = {
         }
 
         if (this.options.reloadOnCurrencyChange) {
+          this.isLoading = true
+
           try {
-            this.isLoading = true
             await this.combineData(true)
           } catch (error) {
             console.log(error)
@@ -280,13 +274,16 @@ module.exports = {
 
   computed: {
     filteredRecords () {
-      if (!this.filter) {
-        return this.records
-      }
-
-      return this.records.filter(record => {
+      const records = this.filter ? this.records.filter(record => {
         return record.crypto.startsWith('-') === (this.filter === 'outgoing')
-      })
+      }) : this.records
+
+      this.period = records.length ? {
+        start: records[records.length - 1].date,
+        end: records[0].date
+      } : {}
+
+      return records
     },
 
     logoImage () {

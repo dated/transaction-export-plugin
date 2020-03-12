@@ -582,7 +582,11 @@ module.exports = {
         await this.marketService.fetchClosingPrices()
       }
 
-      this.records = this.marketService.combinePricesWithTransactions(this.prices, this.transactions)
+      this.records = []
+
+      for (const transactionsChunk of utils.chunk(this.transactions, 500)) {
+        this.records = this.records.concat(this.marketService.combinePricesWithTransactions(transactionsChunk))
+      }
     }
   }
 }

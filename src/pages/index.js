@@ -6,9 +6,8 @@ const ButtonLoader = require('../components/ButtonLoader')
 const RecordStats = require('../components/RecordStats')
 const RecordTable = require('../components/RecordTable')
 
-const CurrencyChangeModal = require('../components/modals/CurrencyChangeModal')
 const DisclaimerModal = require('../components/modals/DisclaimerModal')
-const EstimateWarningModal = require('../components/modals/EstimateWarningModal')
+const TransactionCountWarningModal = require('../components/modals/TransactionCountWarningModal')
 const ExportRecordsModal = require('../components/modals/ExportRecordsModal')
 
 const utils = require('../utils')
@@ -75,7 +74,7 @@ module.exports = {
             :items="addresses"
             :value="addresses[0]"
             :pin-to-input-width="true"
-            @select="onDropdownSelect"
+            @select="setAddress"
           />
 
           <ButtonLoader
@@ -169,13 +168,9 @@ module.exports = {
         :callback="handleEvent"
       />
 
-      <CurrencyChangeModal
-        v-if="showCurrencyChangeModal"
-        :callback="handleEvent"
-      />
-
-      <EstimateWarningModal
-        v-if="showEstimateWarningModal"
+      <TransactionCountWarningModal
+        v-if="showTransactionCountWarningModal"
+        :count="walletData.totalCount"
         :callback="handleEvent"
       />
 
@@ -189,10 +184,9 @@ module.exports = {
 
   components: {
     ButtonLoader,
-    CurrencyChangeModal,
     DisclaimerModal,
-    EstimateWarningModal,
     ExportRecordsModal,
+    TransactionCountWarningModal,
     Header,
     RecordStats,
     RecordTable
@@ -200,21 +194,25 @@ module.exports = {
 
   data: () => ({
     address: '',
+    recordAddress: null,
     isLoading: false,
     isInitialised: false,
     currentPage: 1,
     perPage: 25,
-    transactions: [],
+    walletData: {
+      totalCount: 0,
+      pageCount: 0
+    },
     filter: null,
     period: {},
+    transactions: [],
     records: [],
     marketService: null,
-    showCurrencyChangeModal: false,
-    showEstimateWarningModal: false,
-    showExportRecordsModal: false
+    showExportRecordsModal: false,
+    showTransactionCountWarningModal: false
   }),
 
-  mounted () {
+  async mounted () {
     if (!this.hasWallets || !this.hasMarketData) {
       return
     }
@@ -222,51 +220,59 @@ module.exports = {
     this.address = this.addresses[0]
 
     this.marketService = new MarketService({
-      address: this.address,
       token: this.profile.network.token,
       currency: this.profile.currency,
-      epoch: this.profile.network.constants.epoch
+      epoch: this.profile.network.constants.epoch,
+      peers: await walletApi.peers.all.findPeersWithPlugin('core-api')
     })
   },
 
   watch: {
     async address (address) {
-      this.marketService.updateConfig({ address })
+      if (address === this.recordAddress) {
+        return
+      }
+
+      if (this.marketService) {
+        this.marketService.updateConfig({ address })
+      }
 
       if (this.isInitialised) {
-        try {
-          this.isLoading = true
-          await this.fetchTransactions()
-          this.combineData()
-        } catch (error) {
-          console.log(error)
-          this.records = []
-        } finally {
+        this.isLoading = true
+
+        this.walletData = await this.fetchWalletData()
+
+        if (this.walletData.totalCount > 25000) {
+          this.showTransactionCountWarningModal = true
+        } else {
+          try {
+            await this.fetchTransactions()
+            this.combineData()
+          } catch (error) {
+            walletApi.alert.error('Failed to load transactions')
+          }
+
           this.isLoading = false
         }
       }
     },
 
     async 'profile.currency' (currency) {
-      this.marketService.updateConfig({ currency })
+      if (this.marketService) {
+        this.marketService.updateConfig({ currency })
+      }
 
       if (this.isInitialised) {
-        if (this.options.reloadOnCurrencyChange === undefined) {
-          this.showCurrencyChangeModal = true
+        this.isLoading = true
+
+        try {
+          await this.fetchTransactions()
+          this.combineData()
+        } catch (error) {
+          walletApi.alert.error('Failed to load transactions')
         }
 
-        if (this.options.reloadOnCurrencyChange) {
-          this.isLoading = true
-
-          try {
-            await this.combineData(true)
-          } catch (error) {
-            console.log(error)
-            this.records = []
-          } finally {
-            this.isLoading = false
-          }
-        }
+        this.isLoading = false
       }
     }
   },
@@ -358,45 +364,74 @@ module.exports = {
       }
     },
 
-    async __handleCurrencyChangeModalEvent (event, options) {
-      this.closeCurrencyChangeModal()
-
-      if (event === 'cancel') {
-        this.onCancelCurrencyChangeModal(options)
-      } else if (event === 'confirm') {
-        await this.onConfirmCurrencyChangeModal(options)
-      }
-    },
-
     async __handleHeaderEvent (event, options) {
       switch (event) {
         case 'openExportModal': {
           this.openExportModal()
           break
         }
+
         case 'addressChange': {
           this.setAddress(options.address)
           break
         }
+
         case 'reload': {
-          await this.prepareData()
+          this.isLoading = true
+
+          try {
+            await this.fetchTransactions()
+            this.combineData()
+          } catch (error) {
+            walletApi.alert.error('Failed to load transactions')
+          }
+
+          this.isLoading = false
           break
         }
+
         default: break
       }
     },
 
-    __handleEstimateWarningModalEvent (event, options) {
-      this.closeEstimateWarningModal()
+    __handleTransactionCountWarningModalEvent (event) {
+      this.closeTransactionCountWarningModal()
 
       if (event === 'confirm') {
-        this.onConfirmEstimateWarningModal(options.rememberChoice)
+        this.onConfirmTransactionCountWarningModal()
+      } else if (event === 'cancel') {
+        this.isLoading = false
+
+        if (this.isInitialised) {
+          this.setAddress(this.recordAddress)
+        }
       }
     },
 
     async __handleButtonLoaderEvent (event) {
       if (event === 'click') {
-        await this.prepareData()
+        this.isLoading = true
+
+        try {
+          this.walletData = await this.fetchWalletData()
+
+          if (this.walletData.totalCount > 25000) {
+            this.showTransactionCountWarningModal = true
+          } else {
+            try {
+              await this.fetchTransactions()
+              this.combineData()
+
+              this.isInitialised = true
+            } catch (error) {
+              walletApi.alert.error('Failed to load transactions')
+            }
+          }
+        } catch (error) {
+          walletApi.alert.error('Failed to load wallet data')
+        }
+
+        this.isLoading = false
       }
     },
 
@@ -430,6 +465,16 @@ module.exports = {
       }
     },
 
+    async fetchWalletData () {
+      const response = await walletApi.http.get(`https://explorer.ark.io/api/wallets/${this.address}/transactions?limit=1`)
+      const body = JSON.parse(response.body)
+
+      return {
+        totalCount: body.meta.totalCount,
+        pageCount: Math.ceil(body.meta.totalCount / 100)
+      }
+    },
+
     setOption (key, value) {
       walletApi.storage.set(key, value, true)
     },
@@ -446,10 +491,6 @@ module.exports = {
       walletApi.route.goTo(route)
     },
 
-    onDropdownSelect (address) {
-      this.setAddress(address)
-    },
-
     // DisclaimerModal
 
     onCancelDisclaimer () {
@@ -460,37 +501,20 @@ module.exports = {
       this.setOption('hasAcceptedDisclaimer', true)
     },
 
-    // EstimateWarningModal
+    // TransactionCountWarningModal
 
-    closeEstimateWarningModal () {
-      this.showEstimateWarningModal = false
+    closeTransactionCountWarningModal () {
+      this.showTransactionCountWarningModal = false
     },
 
-    onConfirmEstimateWarningModal (rememberChoice) {
-      if (rememberChoice) {
-        this.setOption('noEstimateWarning', true)
-      }
-    },
-
-    // CurrencyChangeModal
-
-    closeCurrencyChangeModal () {
-      this.showCurrencyChangeModal = false
-    },
-
-    onCancelCurrencyChangeModal ({ rememberChoice }) {
-      if (rememberChoice) {
-        this.setOption('reloadOnCurrencyChange', false)
-      }
-    },
-
-    async onConfirmCurrencyChangeModal ({ rememberChoice }) {
-      if (rememberChoice) {
-        this.setOption('reloadOnCurrencyChange', true)
+    async onConfirmTransactionCountWarningModal () {
+      try {
+        await this.fetchTransactions()
+        this.combineData()
+      } catch (error) {
+        walletApi.alert.error('Failed to load transactions')
       }
 
-      this.isLoading = true
-      await this.combineData(true)
       this.isLoading = false
     },
 
@@ -550,39 +574,13 @@ module.exports = {
       return walletApi.dialogs.save(rows, `export_${this.address}.csv`, 'csv')
     },
 
-    async prepareData () {
-      try {
-        this.isLoading = true
-
-        await this.marketService.fetchClosingPrices()
-        await this.fetchTransactions()
-
-        this.combineData()
-      } catch (error) {
-        console.log(error)
-        this.records = []
-      } finally {
-        this.isLoading = false
-        this.isInitialised = true
-      }
-    },
-
     async fetchTransactions () {
-      const { isEstimate, transactions } = await this.marketService.fetchTransactions()
-
-      if (isEstimate && !this.options.noEstimateWarning) {
-        this.showEstimateWarningModal = true
-      }
-
-      this.transactions = transactions
+      this.transactions = await this.marketService.fetchTransactions(this.walletData.pageCount)
     },
 
-    async combineData (refetchPrices = false) {
-      if (refetchPrices) {
-        await this.marketService.fetchClosingPrices()
-      }
-
+    async combineData () {
       this.records = []
+      this.recordAddress = this.address
 
       for (const transactionsChunk of utils.chunk(this.transactions, 500)) {
         this.records = this.records.concat(this.marketService.combinePricesWithTransactions(transactionsChunk))

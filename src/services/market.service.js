@@ -1,34 +1,19 @@
 class MarketService {
-  constructor ({ address, token, currency, epoch }) {
-    this._config = {
+  constructor ({ address, token, currency, epoch, peers }) {
+    this.config = {
       address,
       token,
       currency,
-      epoch
+      epoch,
+      peers
     }
 
-    this._closingPriceMap = null
-  }
-
-  get config () {
-    return this._config
-  }
-
-  set config (config) {
-    this._config = config
-  }
-
-  get closingPrices () {
-    return this._closingPriceMap
-  }
-
-  set closingPrices (prices) {
-    this._closingPriceMap = prices
+    this.closingPrices = {}
   }
 
   updateConfig (config) {
     this.config = {
-      ...this._config,
+      ...this.config,
       ...config
     }
   }
@@ -51,60 +36,47 @@ class MarketService {
       priceMap.set(date, price.close)
     }
 
-    this.closingPrices = priceMap
+    this.closingPrices[this.config.currency] = priceMap
   }
 
-  async fetchTransactions () {
-    let reachedLastPage = false
+  async fetchTransactions (pageCount) {
+    if (!this.closingPrices[this.config.currency]) {
+      await this.fetchClosingPrices()
+    }
+
+    const transactions = []
+    const requests = []
+
     let page = 1
 
-    let isEstimate
-    let transactions = []
+    while (page <= pageCount) {
+      const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
 
-    while (!reachedLastPage) {
-      const requests = []
+      requests.push(
+        walletApi.http.get(`http://${peer.ip}:${peer.port}/api/wallets/${this.config.address}/transactions`, {
+          query: {
+            page
+          },
+          retry: 5
+        })
+      )
 
-      const limit = page + 10
-
-      while (page < limit) {
-        requests.push(
-          walletApi.peers.current.get(`wallets/${this.config.address}/transactions`, {
-            query: {
-              page
-            },
-            retry: 10
-          })
-        )
-
-        page++
-      }
-
-      const results = await Promise.all((requests))
-
-      for (const result of results) {
-        const { meta, data } = result
-
-        if (data.length === 0 && !reachedLastPage) {
-          reachedLastPage = true
-        } else {
-          transactions = transactions.concat(data)
-        }
-
-        if (isEstimate === undefined) {
-          isEstimate = meta.totalCountIsEstimate
-        }
-      }
+      page++
     }
 
-    return {
-      isEstimate,
-      transactions: transactions.filter(transaction => {
-        return (
-          transaction.type === 6 ||
-          (transaction.type === 0 && transaction.recipient !== transaction.sender)
-        )
-      })
+    const responses = await Promise.all(requests)
+
+    for (const response of responses) {
+      const body = JSON.parse(response.body)
+      transactions.push(...body.data)
     }
+
+    return transactions.filter(transaction => {
+      return (
+        transaction.type === 6 ||
+        (transaction.type === 0 && transaction.recipient !== transaction.sender)
+      )
+    })
   }
 
   combinePricesWithTransactions (transactions) {
@@ -138,7 +110,7 @@ class MarketService {
       cryptoAmount = cryptoAmount.dividedBy(1e8)
 
       const transactionDate = walletApi.utils.datetime(transaction.timestamp.unix * 1000).format('YYYY-MM-DD')
-      const historicalPrice = this.closingPrices.get(transactionDate)
+      const historicalPrice = this.closingPrices[this.config.currency].get(transactionDate)
 
       data.push({
         id: transaction.id,

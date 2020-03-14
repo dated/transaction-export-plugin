@@ -22,6 +22,7 @@
       "MENU_ITEMS",
       "UI_COMPONENTS",
       "PROFILE_CURRENT",
+      "PEER_ALL",
       "PEER_CURRENT",
       "HTTP",
       "UTILS",
@@ -30,7 +31,7 @@
       "DIALOGS"
     ],
     "urls": [
-      "https://min-api.cryptocompare.com/data/histoday"
+      "^"
     ],
     "minVersion": "2.6"
   },

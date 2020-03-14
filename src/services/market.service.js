@@ -53,7 +53,13 @@ class MarketService {
       const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
 
       requests.push(
-        walletApi.http.get(`http://${peer.ip}:${peer.port}/api/wallets/${this.config.address}/transactions`, {
+        walletApi.http.post(`http://${peer.ip}:${peer.port}/api/transactions/search`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            addresses: [this.config.address]
+          }),
           query: {
             page
           },

@@ -88,7 +88,7 @@ module.exports = {
                 ref="period"
                 :disabled="isLoading"
                 :items="periods"
-                :value="periods.find(period => period === 'This Year')"
+                value="year"
                 container-classes="whitespace-no-wrap"
                 @select="setPeriod"
               />
@@ -120,6 +120,7 @@ module.exports = {
           :is-loading="isLoading"
           :has-records="records.data.length"
           :period="period"
+          :available-periods="periods"
           :callback="handleEvent"
         />
 
@@ -238,7 +239,7 @@ module.exports = {
   }),
 
   async mounted () {
-    this.setPeriod('This Year')
+    this.setPeriod('year')
 
     if (!this.hasWallets || !this.hasMarketData) {
       return
@@ -369,11 +370,12 @@ module.exports = {
     },
 
     periods () {
-      return [
-        'This Quarter',
-        'This Year',
-        'All Time'
-      ]
+      return {
+        month: 'This Month',
+        quarter: 'This Quarter',
+        year: 'This Year',
+        all: 'All Time'
+      }
     },
 
     hasWallets () {
@@ -569,29 +571,17 @@ module.exports = {
     setPeriod (period) {
       this.period = period
 
-      switch (period) {
-        case 'This Quarter': {
-          this.timestamp = {
-            from: walletApi.utils.datetime().startOf('quarter').format('YYYY-MM-DD'),
-            to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
-          }
-          break
+      if (['month', 'quarter', 'year'].includes(period)) {
+        this.timestamp = {
+          from: walletApi.utils.datetime().startOf(period).format('YYYY-MM-DD'),
+          to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
         }
+      }
 
-        case 'This Year': {
-          this.timestamp = {
-            from: walletApi.utils.datetime().startOf('year').format('YYYY-MM-DD'),
-            to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
-          }
-          break
-        }
-
-        case 'All Time': {
-          this.timestamp = {
-            from: walletApi.utils.datetime(this.profile.network.constants.epoch).format('YYYY-MM-DD'),
-            to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
-          }
-          break
+      if (period === 'all') {
+        this.timestamp = {
+          from: walletApi.utils.datetime(this.profile.network.constants.epoch).format('YYYY-MM-DD'),
+          to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
         }
       }
     },

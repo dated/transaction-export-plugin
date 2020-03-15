@@ -34,7 +34,7 @@ module.exports = {
         <MenuDropdown
           ref="period"
           :disabled="isLoading"
-          :items="periods"
+          :items="availablePeriods"
           :value="period"
           container-classes="whitespace-no-wrap"
           @select="emitPeriodChange"
@@ -98,6 +98,10 @@ module.exports = {
       type: String,
       required: true
     },
+    availablePeriods: {
+      type: Object,
+      required: true
+    },
     callback: {
       type: Function,
       required: true
@@ -107,14 +111,6 @@ module.exports = {
   computed: {
     profile () {
       return walletApi.profiles.getCurrent()
-    },
-
-    periods () {
-      return [
-        'This Quarter',
-        'This Year',
-        'All Time'
-      ]
     },
 
     addresses () {

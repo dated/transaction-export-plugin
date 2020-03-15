@@ -39,7 +39,7 @@ class MarketService {
     this.closingPrices[this.config.currency] = priceMap
   }
 
-  async fetchTransactions (pageCount) {
+  async fetchTransactions (pageCount, timestamp) {
     if (!this.closingPrices[this.config.currency]) {
       await this.fetchClosingPrices()
     }
@@ -58,7 +58,8 @@ class MarketService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            addresses: [this.config.address]
+            addresses: [this.config.address],
+            timestamp
           }),
           query: {
             page
@@ -118,12 +119,14 @@ class MarketService {
       const transactionDate = walletApi.utils.datetime(transaction.timestamp.unix * 1000).format('YYYY-MM-DD')
       const historicalPrice = this.closingPrices[this.config.currency].get(transactionDate)
 
-      data.push({
-        id: transaction.id,
-        date: transactionDate,
-        crypto: cryptoAmount.toString(),
-        fiat: historicalPrice ? cryptoAmount.times(historicalPrice).toString() : 'n/a'
-      })
+      if (!cryptoAmount.isZero()) {
+        data.push({
+          id: transaction.id,
+          date: transactionDate,
+          crypto: cryptoAmount.toString(),
+          fiat: historicalPrice ? cryptoAmount.times(historicalPrice).toString() : 'n/a'
+        })
+      }
     }
 
     return data

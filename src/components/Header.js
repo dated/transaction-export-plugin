@@ -31,9 +31,14 @@ module.exports = {
           Period
         </span>
 
-        <span>
-          {{ period.start }} - {{ period.end }}
-        </span>
+        <MenuDropdown
+          ref="period"
+          :disabled="isLoading"
+          :items="periods"
+          :value="period"
+          container-classes="whitespace-no-wrap"
+          @select="emitPeriodChange"
+        />
       </div>
 
       <div class="flex items-center ml-auto">
@@ -90,7 +95,7 @@ module.exports = {
       required: true
     },
     period: {
-      type: Object,
+      type: String,
       required: true
     },
     callback: {
@@ -102,6 +107,14 @@ module.exports = {
   computed: {
     profile () {
       return walletApi.profiles.getCurrent()
+    },
+
+    periods () {
+      return [
+        'This Quarter',
+        'This Year',
+        'All Time'
+      ]
     },
 
     addresses () {
@@ -120,6 +133,10 @@ module.exports = {
 
     emitAddressChange (address) {
       this.executeCallback('addressChange', { address })
+    },
+
+    emitPeriodChange (period) {
+      this.executeCallback('periodChange', { period })
     },
 
     emitOpenExportModal () {

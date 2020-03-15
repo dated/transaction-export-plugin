@@ -63,19 +63,37 @@ module.exports = {
           v-else
           class="flex flex-col items-center"
         >
-          <p class="mb-5">
-            Select an address below to get started.
-          </p>
+          <div class="flex mb-10">
+            <div class="flex flex-col mr-10">
+              <span class="text-sm text-theme-page-text-light font-semibold mb-1">
+                Address
+              </span>
 
-          <MenuDropdown
-            class="mb-10"
-            ref="address"
-            :disabled="isLoading"
-            :items="addresses"
-            :value="addresses[0]"
-            :pin-to-input-width="true"
-            @select="setAddress"
-          />
+              <MenuDropdown
+                ref="address"
+                :disabled="isLoading"
+                :items="addresses"
+                :value="addresses[0]"
+                :pin-to-input-width="true"
+                @select="setAddress"
+              />
+            </div>
+
+            <div class="flex flex-col">
+              <span class="text-sm text-theme-page-text-light font-semibold mb-1">
+                Period
+              </span>
+
+              <MenuDropdown
+                ref="period"
+                :disabled="isLoading"
+                :items="periods"
+                :value="periods.find(period => period === 'This Year')"
+                container-classes="whitespace-no-wrap"
+                @select="setPeriod"
+              />
+            </div>
+          </div>
 
           <ButtonLoader
             label="Load transactions"
@@ -100,7 +118,7 @@ module.exports = {
         <Header
           :address="address"
           :is-loading="isLoading"
-          :has-records="records.length"
+          :has-records="records.data.length"
           :period="period"
           :callback="handleEvent"
         />
@@ -121,7 +139,7 @@ module.exports = {
             </div>
 
             <div
-              v-else-if="!records.length"
+              v-else-if="!records.data.length"
               class="flex flex-col items-center m-auto"
             >
               <img :src="noResultsImage" class="mb-4 max-w-xs min-w-48">
@@ -135,7 +153,7 @@ module.exports = {
               <RecordStats
                 class="mb-8"
                 :totals="totals"
-                :count="records.length"
+                :count="records.data.length"
                 :filter="filter"
                 :callback="handleEvent"
               />
@@ -194,7 +212,6 @@ module.exports = {
 
   data: () => ({
     address: '',
-    recordAddress: null,
     isLoading: false,
     isInitialised: false,
     currentPage: 1,
@@ -204,20 +221,28 @@ module.exports = {
       pageCount: 0
     },
     filter: null,
-    period: {},
+    period: null,
+    timestamp: {
+      from: '',
+      to: ''
+    },
     transactions: [],
-    records: [],
+    records: {
+      data: [],
+      address: null,
+      period: null,
+    },
     marketService: null,
     showExportRecordsModal: false,
     showTransactionCountWarningModal: false
   }),
 
   async mounted () {
+    this.setPeriod('This Year')
+
     if (!this.hasWallets || !this.hasMarketData) {
       return
     }
-
-    this.address = this.addresses[0]
 
     this.marketService = new MarketService({
       token: this.profile.network.token,
@@ -225,16 +250,43 @@ module.exports = {
       epoch: this.profile.network.constants.epoch,
       peers: await walletApi.peers.all.findPeersWithPlugin('core-api')
     })
+
+    this.address = this.addresses[0]
   },
 
   watch: {
     async address (address) {
-      if (address === this.recordAddress) {
+      if (address === this.records.address) {
         return
       }
 
       if (this.marketService) {
         this.marketService.updateConfig({ address })
+      }
+
+      if (this.isInitialised) {
+        this.isLoading = true
+
+        this.walletData = await this.fetchWalletData()
+
+        if (this.walletData.totalCount > 25000) {
+          this.showTransactionCountWarningModal = true
+        } else {
+          try {
+            await this.fetchTransactions()
+            this.combineData()
+          } catch (error) {
+            walletApi.alert.error('Failed to load transactions')
+          }
+
+          this.isLoading = false
+        }
+      }
+    },
+
+    async period (period) {
+      if (period === this.records.period) {
+        return
       }
 
       if (this.isInitialised) {
@@ -278,17 +330,21 @@ module.exports = {
   },
 
   computed: {
+    normalizedTimestamp () {
+      const normalizeTimestamp = timestamp => {
+        return Math.max(walletApi.utils.datetime(timestamp).unix() - walletApi.utils.datetime(this.profile.network.constants.epoch).unix(), 0)
+      }
+
+      return {
+        from: normalizeTimestamp(`${this.timestamp.from} 00:00:00`),
+        to: normalizeTimestamp(`${this.timestamp.to} 23:59:59`)
+      }
+    },
+
     filteredRecords () {
-      const records = this.filter ? this.records.filter(record => {
+      return this.filter ? this.records.data.filter(record => {
         return record.crypto.startsWith('-') === (this.filter === 'outgoing')
-      }) : this.records
-
-      this.period = records.length ? {
-        start: records[records.length - 1].date,
-        end: records[0].date
-      } : {}
-
-      return records
+      }) : this.records.data
     },
 
     logoImage () {
@@ -312,6 +368,14 @@ module.exports = {
       return this.profile.wallets.map(wallet => wallet.address)
     },
 
+    periods () {
+      return [
+        'This Quarter',
+        'This Year',
+        'All Time'
+      ]
+    },
+
     hasWallets () {
       return this.profile.wallets && this.profile.wallets.length
     },
@@ -321,7 +385,7 @@ module.exports = {
     },
 
     totals () {
-      return this.records.reduce((acc, { crypto, fiat }) => {
+      return this.records.data.reduce((acc, { crypto, fiat }) => {
         if (crypto.startsWith('-')) {
           acc.outgoing = {
             fiat: acc.outgoing.fiat.minus(fiat),
@@ -376,6 +440,11 @@ module.exports = {
           break
         }
 
+        case 'periodChange': {
+          this.setPeriod(options.period)
+          break
+        }
+
         case 'reload': {
           this.isLoading = true
 
@@ -403,7 +472,8 @@ module.exports = {
         this.isLoading = false
 
         if (this.isInitialised) {
-          this.setAddress(this.recordAddress)
+          this.setAddress(this.records.address)
+          this.setPeriod(this.records.period)
         }
       }
     },
@@ -466,7 +536,16 @@ module.exports = {
     },
 
     async fetchWalletData () {
-      const response = await walletApi.http.get(`https://explorer.ark.io/api/wallets/${this.address}/transactions?limit=1`)
+      const response = await walletApi.http.post(`${this.profile.network.explorer}/api/transactions/search?limit=1`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          addresses: [this.address],
+          timestamp: this.normalizedTimestamp
+        })
+      })
+
       const body = JSON.parse(response.body)
 
       return {
@@ -485,6 +564,36 @@ module.exports = {
 
     setAddress (address) {
       this.address = address
+    },
+
+    setPeriod (period) {
+      this.period = period
+
+      switch (period) {
+        case 'This Quarter': {
+          this.timestamp = {
+            from: walletApi.utils.datetime().startOf('quarter').format('YYYY-MM-DD'),
+            to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
+          }
+          break
+        }
+
+        case 'This Year': {
+          this.timestamp = {
+            from: walletApi.utils.datetime().startOf('year').format('YYYY-MM-DD'),
+            to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
+          }
+          break
+        }
+
+        case 'All Time': {
+          this.timestamp = {
+            from: walletApi.utils.datetime(this.profile.network.constants.epoch).format('YYYY-MM-DD'),
+            to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
+          }
+          break
+        }
+      }
     },
 
     goTo (route) {
@@ -575,16 +684,17 @@ module.exports = {
     },
 
     async fetchTransactions () {
-      this.transactions = await this.marketService.fetchTransactions(this.walletData.pageCount)
+      this.transactions = await this.marketService.fetchTransactions(this.walletData.pageCount, this.normalizedTimestamp)
     },
 
     async combineData () {
-      this.records = []
-      this.recordAddress = this.address
-
-      for (const transactionsChunk of utils.chunk(this.transactions, 500)) {
-        this.records = this.records.concat(this.marketService.combinePricesWithTransactions(transactionsChunk))
+      this.records = {
+        data: [],
+        address: this.address,
+        period: this.period
       }
+
+      this.records.data = this.records.data.concat(this.marketService.combinePricesWithTransactions(this.transactions))
     }
   }
 }

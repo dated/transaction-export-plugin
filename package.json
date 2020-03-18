@@ -1,6 +1,6 @@
 {
   "name": "@dated/transaction-export-plugin",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Export your transactions for all your tax needs",
   "main": "src/index.js",
   "author": "Edgar Goetzendorff <hello@dated.fun>",
@@ -23,7 +23,6 @@
       "UI_COMPONENTS",
       "PROFILE_CURRENT",
       "PEER_ALL",
-      "PEER_CURRENT",
       "HTTP",
       "UTILS",
       "STORAGE",
@@ -33,11 +32,12 @@
     "urls": [
       "^"
     ],
-    "minVersion": "2.6"
+    "minVersion": "2.9.1"
   },
   "keywords": [
     "utility",
     "export",
+    "transactions",
     "taxes",
     "@arkecosystem",
     "desktop-wallet",

@@ -1,8 +1,9 @@
 const MarketService = require('../services/market.service.js')
 const ImageService = require('../services/image.service.js')
 
-const Header = require('../components/Header')
 const ButtonLoader = require('../components/ButtonLoader')
+const Footer = require('../components/Footer')
+const Header = require('../components/Header')
 const RecordStats = require('../components/RecordStats')
 const RecordTable = require('../components/RecordTable')
 
@@ -198,6 +199,8 @@ module.exports = {
         :count="filteredRecords.length"
         :callback="handleEvent"
       />
+
+      <Footer />
     </div>
   `,
 
@@ -206,6 +209,7 @@ module.exports = {
     DisclaimerModal,
     ExportRecordsModal,
     TransactionCountWarningModal,
+    Footer,
     Header,
     RecordStats,
     RecordTable

@@ -3,7 +3,7 @@ module.exports = {
     <ModalConfirmation
       container-classes="max-w-md"
       title="Disclaimer"
-      note="The information presented by this plugin has been prepared for informational purposes only, and is not intended to provide, and should not be relied on for, tax, legal or accounting advice."
+      note="The information presented by this plugin has been prepared for informational purposes only, and is not intended to provide, and should not be relied on for tax, legal or accounting advice."
       cancel-button="Cancel"
       continue-button="I understand"
       @cancel="emitCancel"

@@ -39,7 +39,7 @@ class MarketService {
     this.closingPrices[this.config.currency] = priceMap
   }
 
-  async fetchTransactions (pageCount, timestamp) {
+  async fetchTransactions ({ sent, received }, timestamp) {
     if (!this.closingPrices[this.config.currency]) {
       await this.fetchClosingPrices()
     }
@@ -47,28 +47,32 @@ class MarketService {
     const transactions = []
     const requests = []
 
-    let page = 1
+    for (const param of ['senderId', 'recipientId']) {
+      let page = 1
 
-    while (page <= pageCount) {
-      const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
+      const pageCount = param === 'senderId' ? sent.pageCount : received.pageCount
 
-      requests.push(
-        walletApi.http.post(`http://${peer.ip}:${peer.port}/api/transactions/search`, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            addresses: [this.config.address],
-            timestamp
-          }),
-          query: {
-            page
-          },
-          retry: 5
-        })
-      )
+      while (page <= pageCount) {
+        const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
 
-      page++
+        requests.push(
+          walletApi.http.post(`http://${peer.ip}:${peer.port}/api/transactions/search`, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              [param]: this.config.address,
+              timestamp
+            }),
+            query: {
+              page
+            },
+            retry: 5
+          })
+        )
+
+        page++
+      }
     }
 
     const responses = await Promise.all(requests)
@@ -78,7 +82,7 @@ class MarketService {
       transactions.push(...body.data)
     }
 
-    return transactions.filter(transaction => {
+    return transactions.sort((a, b) => b.timestamp.unix - a.timestamp.unix).filter(transaction => {
       return (
         transaction.type === 6 ||
         (transaction.type === 0 && transaction.recipient !== transaction.sender)

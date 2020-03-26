@@ -222,8 +222,14 @@ module.exports = {
     currentPage: 1,
     perPage: 25,
     walletData: {
-      totalCount: 0,
-      pageCount: 0
+      sent: {
+        totalCount: 0,
+        pageCount: 0
+      },
+      received: {
+        totalCount: 0,
+        pageCount: 0
+      }
     },
     filter: null,
     period: null,
@@ -274,7 +280,7 @@ module.exports = {
 
         this.walletData = await this.fetchWalletData()
 
-        if (this.walletData.totalCount > 25000) {
+        if (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000) {
           this.showTransactionCountWarningModal = true
         } else {
           try {
@@ -299,7 +305,7 @@ module.exports = {
 
         this.walletData = await this.fetchWalletData()
 
-        if (this.walletData.totalCount > 25000) {
+        if (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000) {
           this.showTransactionCountWarningModal = true
         } else {
           try {
@@ -492,7 +498,7 @@ module.exports = {
         try {
           this.walletData = await this.fetchWalletData()
 
-          if (this.walletData.totalCount > 25000) {
+          if (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000) {
             this.showTransactionCountWarningModal = true
           } else {
             try {
@@ -543,22 +549,30 @@ module.exports = {
     },
 
     async fetchWalletData () {
-      const response = await walletApi.http.post(`${this.profile.network.explorer}/api/transactions/search?limit=1`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          addresses: [this.address],
-          timestamp: this.normalizedTimestamp
+      let response, body
+
+      const counts = {}
+
+      for (const param of ['senderId', 'recipientId']) {
+        response = await walletApi.http.post(`${this.profile.network.explorer}/api/transactions/search?limit=1`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            [param]: this.address,
+            timestamp: this.normalizedTimestamp
+          })
         })
-      })
 
-      const body = JSON.parse(response.body)
+        body = JSON.parse(response.body)
 
-      return {
-        totalCount: body.meta.totalCount,
-        pageCount: Math.ceil(body.meta.totalCount / 100)
+        counts[param === 'senderId' ? 'sent' : 'received'] = {
+          totalCount: body.meta.totalCount,
+          pageCount: Math.ceil(body.meta.totalCount / 100)
+        }
       }
+
+      return counts
     },
 
     setOption (key, value) {
@@ -686,7 +700,7 @@ module.exports = {
     },
 
     async fetchTransactions () {
-      this.transactions = await this.marketService.fetchTransactions(this.walletData.pageCount, this.normalizedTimestamp)
+      this.transactions = await this.marketService.fetchTransactions(this.walletData, this.normalizedTimestamp)
     },
 
     async combineData () {

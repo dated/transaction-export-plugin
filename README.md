@@ -2,7 +2,7 @@
 
 ![Transaction Export Plugin](./banner.png)
 
-> Export your transactions for all your tax needs. The information presented by this plugin has been prepared for informational purposes only, and is not intended to provide, and should not be relied on for, tax, legal or accounting advice.
+> Export your wallet transaction history. The information presented by this plugin has been prepared for informational purposes only, and is not intended to provide, and should not be relied on for, tax, legal or accounting advice.
 
 ## Installation
 

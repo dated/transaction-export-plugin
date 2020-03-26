@@ -33,7 +33,7 @@ module.exports = {
 
   methods: {
     getNote () {
-      return `Your are about to request and process ${this.formatNumber(this.count)} transactions. This process will potentially take several minutes. Are you sure you want to continue?`
+      return `You're about to request and process ${this.formatNumber(this.count)} transactions. This process will potentially take several minutes. Are you sure you want to continue?`
     },
 
     executeCallback (event) {

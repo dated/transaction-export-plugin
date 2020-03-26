@@ -1,7 +1,7 @@
 {
   "name": "@dated/transaction-export-plugin",
   "version": "1.0.1",
-  "description": "Export your transactions for all your tax needs",
+  "description": "Export your wallet transaction history",
   "main": "src/index.js",
   "author": "Edgar Goetzendorff <hello@dated.fun>",
   "license": "MIT",

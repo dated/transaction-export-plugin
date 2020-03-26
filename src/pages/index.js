@@ -378,6 +378,7 @@ module.exports = {
         month: 'This Month',
         quarter: 'This Quarter',
         year: 'This Year',
+        lastYear: 'Last Year',
         all: 'All Time'
       }
     },
@@ -579,6 +580,13 @@ module.exports = {
         this.timestamp = {
           from: walletApi.utils.datetime().startOf(period).format('YYYY-MM-DD'),
           to: walletApi.utils.datetime(Date.now()).format('YYYY-MM-DD')
+        }
+      }
+
+      if (period === 'lastYear') {
+        this.timestamp = {
+          from: walletApi.utils.datetime().startOf('year').subtract(1, 'years').format('YYYY-MM-DD'),
+          to: walletApi.utils.datetime().endOf('year').subtract(1, 'year').format('YYYY-MM-DD')
         }
       }
 

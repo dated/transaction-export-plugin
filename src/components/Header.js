@@ -24,7 +24,7 @@ module.exports = {
       </div>
 
       <div
-        v-if="!isLoading && hasRecords"
+        v-if="!isLoading"
         class="flex flex-col border-l border-theme-line-separator px-12"
       >
         <span class="text-sm text-theme-page-text-light font-semibold mb-1">

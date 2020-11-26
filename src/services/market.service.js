@@ -82,12 +82,14 @@ class MarketService {
       transactions.push(...body.data)
     }
 
-    return transactions.sort((a, b) => b.timestamp.unix - a.timestamp.unix).filter(transaction => {
+    let results = transactions.sort((a, b) => b.timestamp.unix - a.timestamp.unix).filter(transaction => {
       return (
         transaction.type === 6 ||
         (transaction.type === 0 && transaction.recipient !== transaction.sender)
       )
     })
+
+    return results.filter((a, index, arr) => arr.findIndex((b) => b.id === a.id) === index);
   }
 
   combinePricesWithTransactions (transactions) {

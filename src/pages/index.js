@@ -255,11 +255,19 @@ module.exports = {
       return
     }
 
+    let peers = [];
+
+    try {
+      peers = await this.fetchPeers();
+    } catch {
+      walletApi.alert.error('Failed to load peers')
+    }
+
     this.marketService = new MarketService({
       token: this.profile.network.token,
       currency: this.profile.currency,
       epoch: this.profile.network.constants.epoch,
-      peers: await this.fetchPeers()
+      peers
     })
 
     this.address = this.addresses[0]

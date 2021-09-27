@@ -259,7 +259,7 @@ module.exports = {
       token: this.profile.network.token,
       currency: this.profile.currency,
       epoch: this.profile.network.constants.epoch,
-      peers: await walletApi.peers.all.findPeersWithPlugin('core-api')
+      peers: await this.fetchPeers()
     })
 
     this.address = this.addresses[0]
@@ -551,7 +551,7 @@ module.exports = {
     async fetchWalletData () {
       let query, response, body
 
-      const peer = (await walletApi.peers.all.findPeersWithoutEstimates())[0]
+      const peer = (await walletApi.peers.all.withVersion('3.0.0').findPeersWithoutEstimates())[0]
 
       const counts = {}
 
@@ -714,6 +714,30 @@ module.exports = {
       rows = rows.join('\n')
 
       return walletApi.dialogs.save(rows, `export_${this.address}.csv`, 'csv')
+    },
+
+    async fetchPeers () {
+      const peers = await walletApi.peers.all.findPeersWithPlugin('core-api')
+
+      const filteredPeers = []
+
+      const responses = await Promise.all(
+        peers.map(peer =>
+          walletApi.http.get(`http://${peer.ip}:${peer.port}/api/node/configuration`, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+        )
+      )
+
+      for (const [index, response] of responses.entries()) {
+        if (JSON.parse(response.body).data.core.version.startsWith('3')) {
+          filteredPeers.push(peers[index])
+        }
+      }
+
+      return filteredPeers
     },
 
     async fetchTransactions () {

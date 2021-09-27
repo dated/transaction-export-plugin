@@ -39,7 +39,7 @@ class MarketService {
     this.closingPrices[this.config.currency] = priceMap
   }
 
-  async fetchTransactions ({ sent, received }, timestamp) {
+  async fetchTransactions (pageCount, timestamp) {
     if (!this.closingPrices[this.config.currency]) {
       await this.fetchClosingPrices()
     }
@@ -47,32 +47,27 @@ class MarketService {
     const transactions = []
     const requests = []
 
-    for (const param of ['senderId', 'recipientId']) {
-      let page = 1
+    let page = 1
 
-      const pageCount = param === 'senderId' ? sent.pageCount : received.pageCount
+    while (page <= pageCount) {
+      const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
 
-      while (page <= pageCount) {
-        const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
+      requests.push(
+        walletApi.http.get(`http://${peer.ip}:${peer.port}/api/transactions`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          query: {
+            address: this.config.address,
+            'timestamp.from': timestamp.from,
+            'timestamp.to': timestamp.to,
+            page
+          },
+          retry: 5
+        })
+      )
 
-        requests.push(
-          walletApi.http.post(`http://${peer.ip}:${peer.port}/api/transactions/search`, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              [param]: this.config.address,
-              timestamp
-            }),
-            query: {
-              page
-            },
-            retry: 5
-          })
-        )
-
-        page++
-      }
+      page++
     }
 
     const responses = await Promise.all(requests)

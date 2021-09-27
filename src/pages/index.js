@@ -286,7 +286,7 @@ module.exports = {
           try {
             await this.fetchTransactions()
             this.combineData()
-          } catch (error) {
+          } catch {
             walletApi.alert.error('Failed to load transactions')
           }
 
@@ -311,7 +311,7 @@ module.exports = {
           try {
             await this.fetchTransactions()
             this.combineData()
-          } catch (error) {
+          } catch {
             walletApi.alert.error('Failed to load transactions')
           }
 
@@ -331,7 +331,7 @@ module.exports = {
         try {
           await this.fetchTransactions()
           this.combineData()
-        } catch (error) {
+        } catch {
           walletApi.alert.error('Failed to load transactions')
         }
 
@@ -464,7 +464,7 @@ module.exports = {
           try {
             await this.fetchTransactions()
             this.combineData()
-          } catch (error) {
+          } catch {
             walletApi.alert.error('Failed to load transactions')
           }
 
@@ -506,11 +506,11 @@ module.exports = {
               this.combineData()
 
               this.isInitialised = true
-            } catch (error) {
+            } catch {
               walletApi.alert.error('Failed to load transactions')
             }
           }
-        } catch (error) {
+        } catch {
           walletApi.alert.error('Failed to load wallet data')
         }
 
@@ -549,24 +549,41 @@ module.exports = {
     },
 
     async fetchWalletData () {
-      let response, body
+      let query, response, body
+
+      const peer = (await walletApi.peers.all.findPeersWithoutEstimates())[0]
 
       const counts = {}
 
-      for (const param of ['senderId', 'recipientId']) {
-        response = await walletApi.http.post(`${this.profile.network.explorer}/api/transactions/search?limit=1`, {
+      const baseParams = {
+        'timestamp.from': this.normalizedTimestamp.from,
+        'timestamp.to': this.normalizedTimestamp.to,
+        limit: 1
+      }
+
+      for (const param of [undefined, 'senderId', 'recipientId']) {
+        if (!param) {
+          query = {
+            address: this.address,
+            ...baseParams
+          }
+        } else {
+          query = {
+            [param]: this.address,
+            ...baseParams
+          }
+        }
+
+        response = await walletApi.http.get(`http://${peer.ip}:${peer.port}/api/transactions`, {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            [param]: this.address,
-            timestamp: this.normalizedTimestamp
-          })
+          query
         })
 
         body = JSON.parse(response.body)
 
-        counts[param === 'senderId' ? 'sent' : 'received'] = {
+        counts[!param ? 'total' : param === 'senderId' ? 'sent' : 'received'] = {
           totalCount: body.meta.totalCount,
           pageCount: Math.ceil(body.meta.totalCount / 100)
         }
@@ -636,7 +653,7 @@ module.exports = {
       try {
         await this.fetchTransactions()
         this.combineData()
-      } catch (error) {
+      } catch {
         walletApi.alert.error('Failed to load transactions')
       }
 
@@ -700,7 +717,7 @@ module.exports = {
     },
 
     async fetchTransactions () {
-      this.transactions = await this.marketService.fetchTransactions(this.walletData, this.normalizedTimestamp)
+      this.transactions = await this.marketService.fetchTransactions(this.walletData.total.pageCount, this.normalizedTimestamp)
     },
 
     async combineData () {

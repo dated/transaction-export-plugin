@@ -559,7 +559,7 @@ module.exports = {
     async fetchWalletData () {
       let query, response, body
 
-      const peer = (await walletApi.peers.all.withVersion('3.0.0').findPeersWithoutEstimates())[0]
+      const peer = (await walletApi.peers.all.withVersion('^3.0.0').findPeersWithoutEstimates())[0]
 
       const counts = {}
 

@@ -125,6 +125,7 @@ class MarketService {
           id: transaction.id,
           date: transactionDate,
           crypto: cryptoAmount.toString(),
+          vendorField: transaction.vendorField,
           fiat: historicalPrice ? cryptoAmount.times(historicalPrice).toString() : 'n/a'
         })
       }

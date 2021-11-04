@@ -69,6 +69,12 @@ module.exports = {
         </span>
 
         <span
+          v-else-if="data.column.field === 'vendorField'"
+        >
+          {{ data.row.vendorField }}
+        </span>
+
+        <span
           v-else-if="data.column.field === 'id'"
           class="flex items-center"
         >
@@ -137,6 +143,12 @@ module.exports = {
           label: 'Date',
           field: 'date',
           sortable: false,
+          tdClass: 'whitespace-no-wrap'
+        },
+        {
+          label: 'Smartbridge',
+          field: 'vendorField',
+          sortable: true,
           tdClass: 'whitespace-no-wrap'
         },
         {

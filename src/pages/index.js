@@ -540,7 +540,7 @@ module.exports = {
 
     async __handleExportRecordsModalEvent (event, options) {
       this.closeExportRecordsModal()
-      
+
       if (event === 'confirm') {
         this.setOption('exportOptions', options.exportOptions)
 
@@ -695,6 +695,7 @@ module.exports = {
           date: 'Date',
           crypto: `Crypto Amount (${this.profile.network.token})`,
           fiat: `Fiat Amount (${this.profile.currency})`,
+          vendorField: 'Smartbridge',
           id: 'Transaction ID'
         }
 

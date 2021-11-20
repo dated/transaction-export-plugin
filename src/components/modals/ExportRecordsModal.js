@@ -97,6 +97,7 @@ module.exports = {
           date: true,
           crypto: true,
           fiat: true,
+          vendorField: true,
           id: true
         }
       }
@@ -121,6 +122,7 @@ module.exports = {
         date: 'Date',
         crypto: 'Crypto Amount',
         fiat: 'Fiat Amount',
+        vendorField: 'Smartbridge',
         id: 'Transaction ID'
       }
       return labels[column]

@@ -90,7 +90,7 @@ module.exports = {
 
   computed: {
     exportOptions () {
-      return walletApi.storage.get('exportOptions', true) || {
+      const defaultOptions = {
         delimiter: ',',
         includeHeaders: true,
         columns: {
@@ -100,6 +100,23 @@ module.exports = {
           vendorField: true,
           id: true
         }
+      }
+
+      const storedOptions = walletApi.storage.get('exportOptions', true)
+
+      if (!storedOptions) {
+        return defaultOptions
+      }
+
+      const columns = {
+        ...defaultOptions.columns,
+        ...storedOptions.columns
+      }
+
+      return {
+        ...defaultOptions,
+        ...storedOptions,
+        columns
       }
     },
 

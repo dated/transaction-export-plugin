@@ -1,5 +1,10 @@
 const utils = require('../utils')
 
+const TransactionTypes = {
+  Transfer: 0,
+  MultiPayment: 6
+}
+
 class MarketService {
   constructor ({ address, token, currency, epoch, peers }) {
     this.config = {
@@ -67,6 +72,7 @@ class MarketService {
             address: this.config.address,
             'timestamp.from': timestamp.from,
             'timestamp.to': timestamp.to,
+            type: Object.values(TransactionTypes).join(','),
             page
           },
           retry: 5
@@ -83,14 +89,14 @@ class MarketService {
       transactions.push(...body.data)
     }
 
-    let results = transactions.sort((a, b) => b.timestamp.unix - a.timestamp.unix).filter(transaction => {
+    let results = transactions.filter(transaction => {
       return (
-        transaction.type === 6 ||
-        (transaction.type === 0 && transaction.recipient !== transaction.sender)
+        transaction.type === TransactionTypes.MultiPayment ||
+        (transaction.type === TransactionTypes.Transfer && transaction.recipient !== transaction.sender)
       )
-    })
+    }).sort((a, b) => b.timestamp.unix - a.timestamp.unix)
 
-    return results.filter((a, index, arr) => arr.findIndex((b) => b.id === a.id) === index);
+    return results.filter((a, index, arr) => arr.findIndex((b) => b.id === a.id) === index)
   }
 
   combinePricesWithTransactions (transactions) {
@@ -99,13 +105,13 @@ class MarketService {
     for (const transaction of transactions) {
       let cryptoAmount = new walletApi.utils.bigNumber(0)
 
-      if (transaction.type === 0) {
+      if (transaction.type === TransactionTypes.Transfer) {
         if (transaction.sender === this.config.address) {
           cryptoAmount = cryptoAmount.minus(transaction.amount)
         } else {
           cryptoAmount = cryptoAmount.plus(transaction.amount)
         }
-      } else if (transaction.type === 6) {
+      } else if (transaction.type === TransactionTypes.MultiPayment) {
         if (transaction.sender === this.config.address) {
           for (const payment of transaction.asset.payments) {
             if (payment.recipientId !== this.config.address) {

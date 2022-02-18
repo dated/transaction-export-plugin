@@ -292,7 +292,7 @@ module.exports = {
         } else {
           try {
             await this.fetchTransactions()
-            this.combineData()
+            await this.combineData()
           } catch {
             walletApi.alert.error('Failed to load transactions')
           }
@@ -317,7 +317,7 @@ module.exports = {
         } else {
           try {
             await this.fetchTransactions()
-            this.combineData()
+            await this.combineData()
           } catch {
             walletApi.alert.error('Failed to load transactions')
           }
@@ -337,7 +337,7 @@ module.exports = {
 
         try {
           await this.fetchTransactions()
-          this.combineData()
+          await this.combineData()
         } catch {
           walletApi.alert.error('Failed to load transactions')
         }
@@ -470,7 +470,7 @@ module.exports = {
 
           try {
             await this.fetchTransactions()
-            this.combineData()
+            await this.combineData()
           } catch {
             walletApi.alert.error('Failed to load transactions')
           }
@@ -510,7 +510,7 @@ module.exports = {
           } else {
             try {
               await this.fetchTransactions()
-              this.combineData()
+              await this.combineData()
 
               this.isInitialised = true
             } catch {
@@ -664,7 +664,7 @@ module.exports = {
     async onConfirmTransactionCountWarningModal () {
       try {
         await this.fetchTransactions()
-        this.combineData()
+        await this.combineData()
       } catch {
         walletApi.alert.error('Failed to load transactions')
       }

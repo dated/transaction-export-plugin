@@ -237,6 +237,7 @@ module.exports = {
       from: '',
       to: ''
     },
+    peers: null,
     transactions: [],
     records: {
       data: [],
@@ -255,10 +256,8 @@ module.exports = {
       return
     }
 
-    let peers = [];
-
     try {
-      peers = await this.fetchPeers();
+      await this.fetchPeers()
     } catch {
       walletApi.alert.error('Failed to load peers')
     }
@@ -267,7 +266,7 @@ module.exports = {
       token: this.profile.network.token,
       currency: this.profile.currency,
       epoch: this.profile.network.constants.epoch,
-      peers
+      peers: this.peers
     })
 
     this.address = this.addresses[0]
@@ -436,7 +435,7 @@ module.exports = {
     async handleEvent ({ component, event, options }) {
       try {
         await this[`__handle${component}Event`](event, options)
-      } catch (error) {
+      } catch {
         console.log(`Missing event handler for component: ${component}`)
       }
     },
@@ -515,11 +514,11 @@ module.exports = {
 
               this.isInitialised = true
             } catch {
-              walletApi.alert.error('Failed to load transactions')
+              walletApi.alert.error('Failed to load transactions, please try again')
             }
           }
         } catch {
-          walletApi.alert.error('Failed to load wallet data')
+          walletApi.alert.error('Failed to load wallet data, please try again')
         }
 
         this.isLoading = false
@@ -559,7 +558,12 @@ module.exports = {
     async fetchWalletData () {
       let query, response, body
 
-      const peer = (await walletApi.peers.all.withVersion('^3.0.0').findPeersWithoutEstimates())[0]
+      const peers = await walletApi.peers.all.withVersion('^3.0.0').findPeersWithPlugin('core-api')
+      const peer = await utils.getValidPeer(peers, { withoutEstimates: true })
+
+      if (!peer) {
+        console.error('Failed to find Peer')
+      }
 
       const counts = {}
 
@@ -730,7 +734,7 @@ module.exports = {
 
       const filteredPeers = []
 
-      const responses = await Promise.all(
+      const responses = await Promise.allSettled(
         peers.map(peer =>
           walletApi.http.get(`http://${peer.ip}:${peer.port}/api/node/configuration`, {
             headers: {
@@ -741,12 +745,12 @@ module.exports = {
       )
 
       for (const [index, response] of responses.entries()) {
-        if (JSON.parse(response.body).data.core.version.startsWith('3')) {
+        if (response.status === 'fulfilled' && JSON.parse(response.value.body).data.core.version.startsWith('3')) {
           filteredPeers.push(peers[index])
         }
       }
 
-      return filteredPeers
+      this.peers = filteredPeers
     },
 
     async fetchTransactions () {

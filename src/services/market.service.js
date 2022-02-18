@@ -1,3 +1,5 @@
+const utils = require('../utils')
+
 class MarketService {
   constructor ({ address, token, currency, epoch, peers }) {
     this.config = {
@@ -50,7 +52,11 @@ class MarketService {
     let page = 1
 
     while (page <= pageCount) {
-      const peer = this.config.peers[Math.floor(Math.random() * this.config.peers.length)]
+      const peer = await utils.getValidPeer(this.config.peers)
+
+      if (!peer) {
+        throw new Error('Failed to find Peer')
+      }
 
       requests.push(
         walletApi.http.get(`http://${peer.ip}:${peer.port}/api/transactions`, {

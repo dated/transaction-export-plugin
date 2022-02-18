@@ -1,9 +1,21 @@
-const getValidPeer = async (peers, options = {}) => {
-  let peer = undefined
+const getRandomPeer = (peers) => peers[Math.floor(Math.random() * peers.length)]
 
-  let count = 1
-  while (count < 20 && !peer) {
-    peer = peers[Math.floor(Math.random() * peers.length)]
+const getValidPeer = async (peers, options = {}) => {
+  if (!Object.keys(options)) {
+    return getRandomPeer(peers)
+  }
+
+  const checked = {}
+
+  let result = undefined
+  let count = 0
+
+  while (count < peers.length && !result) {
+    const peer = getRandomPeer(peers)
+
+    if (checked[peer.ip]) {
+      continue
+    }
 
     try {
       const response = await walletApi.http.get(`http://${peer.ip}:${peer.port}/api/blocks?limit=1`)
@@ -14,16 +26,19 @@ const getValidPeer = async (peers, options = {}) => {
           peer = undefined
         }
       }
-    } catch {
-      peer = undefined
-    }
+
+      result = peer
+    } catch {}
+
+    checked[peer.ip] = true
 
     count = count + 1
   }
 
-  return peer
+  return result
 }
 
 module.exports = {
+  getRandomPeer,
   getValidPeer
 }

@@ -57,7 +57,7 @@ class MarketService {
     let page = 1
 
     while (page <= pageCount) {
-      const peer = await utils.getValidPeer(this.config.peers)
+      const peer = await utils.getRandomPeer(this.config.peers)
 
       if (!peer) {
         throw new Error('Failed to find Peer')

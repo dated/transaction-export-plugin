@@ -283,22 +283,7 @@ module.exports = {
       }
 
       if (this.isInitialised) {
-        this.isLoading = true
-
-        this.walletData = await this.fetchWalletData()
-
-        if (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000) {
-          this.showTransactionCountWarningModal = true
-        } else {
-          try {
-            await this.fetchTransactions()
-            await this.combineData()
-          } catch {
-            walletApi.alert.error('Failed to load transactions')
-          }
-
-          this.isLoading = false
-        }
+        await this.updateTransactions()
       }
     },
 
@@ -308,22 +293,7 @@ module.exports = {
       }
 
       if (this.isInitialised) {
-        this.isLoading = true
-
-        this.walletData = await this.fetchWalletData()
-
-        if (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000) {
-          this.showTransactionCountWarningModal = true
-        } else {
-          try {
-            await this.fetchTransactions()
-            await this.combineData()
-          } catch {
-            walletApi.alert.error('Failed to load transactions')
-          }
-
-          this.isLoading = false
-        }
+        await this.updateTransactions()
       }
     },
 
@@ -333,16 +303,7 @@ module.exports = {
       }
 
       if (this.isInitialised) {
-        this.isLoading = true
-
-        try {
-          await this.fetchTransactions()
-          await this.combineData()
-        } catch {
-          walletApi.alert.error('Failed to load transactions')
-        }
-
-        this.isLoading = false
+        await this.updateTransactions(false)
       }
     }
   },
@@ -466,16 +427,7 @@ module.exports = {
         }
 
         case 'reload': {
-          this.isLoading = true
-
-          try {
-            await this.fetchTransactions()
-            await this.combineData()
-          } catch {
-            walletApi.alert.error('Failed to load transactions')
-          }
-
-          this.isLoading = false
+          await this.updateTransactions()
           break
         }
 
@@ -500,28 +452,7 @@ module.exports = {
 
     async __handleButtonLoaderEvent (event) {
       if (event === 'click') {
-        this.isLoading = true
-
-        try {
-          this.walletData = await this.fetchWalletData()
-
-          if (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000) {
-            this.showTransactionCountWarningModal = true
-          } else {
-            try {
-              await this.fetchTransactions()
-              await this.combineData()
-
-              this.isInitialised = true
-            } catch {
-              walletApi.alert.error('Failed to load transactions, please try again')
-            }
-          }
-        } catch {
-          walletApi.alert.error('Failed to load wallet data, please try again')
-        }
-
-        this.isLoading = false
+        await this.updateTransactions()
       }
     },
 
@@ -562,7 +493,7 @@ module.exports = {
       const peer = await utils.getValidPeer(peers, { withoutEstimates: true })
 
       if (!peer) {
-        console.error('Failed to find Peer')
+        throw new Error('no suitable peer found')
       }
 
       const counts = {}
@@ -662,14 +593,7 @@ module.exports = {
     },
 
     async onConfirmTransactionCountWarningModal () {
-      try {
-        await this.fetchTransactions()
-        await this.combineData()
-      } catch {
-        walletApi.alert.error('Failed to load transactions')
-      }
-
-      this.isLoading = false
+      await this.updateTransactions(false)
     },
 
     // ExportRecordsModal
@@ -765,6 +689,39 @@ module.exports = {
       }
 
       this.records.data = this.records.data.concat(this.marketService.combinePricesWithTransactions(this.transactions))
+    },
+
+    async updateTransactions (updateCounts = true) {
+      this.isLoading = true
+
+      if (updateCounts) {
+        try {
+          this.walletData = await this.fetchWalletData()
+        } catch {
+          walletApi.alert.error('Failed to load wallet data - please try again')
+
+          this.isLoading = false
+
+          return
+        }
+      }
+
+      if (!updateCounts && (this.walletData.sent.totalCount + this.walletData.received.totalCount > 25000)) {
+        this.showTransactionCountWarningModal = true
+      } else {
+        try {
+          await this.fetchTransactions()
+          await this.combineData()
+
+          if (!this.isInitialised) {
+            this.isInitialised = true
+          }
+        } catch {
+          walletApi.alert.error('Failed to load transactions')
+        }
+
+        this.isLoading = false
+      }
     }
   }
 }
